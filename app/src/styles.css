@@ -1,9 +1,8 @@
 @import 'tailwindcss';
 
 @import 'tw-animate-css';
-@import "tw-animate-css";
-@import "shadcn/tailwind.css";
-@import "@fontsource-variable/dm-sans";
+@import 'shadcn/tailwind.css';
+@import '@fontsource-variable/dm-sans';
 
 @custom-variant dark (&:is(.dark *));
 
@@ -41,6 +40,7 @@
   --sidebar-accent-foreground: oklch(0.218 0.008 223.9);
   --sidebar-border: oklch(0.925 0.005 214.3);
   --sidebar-ring: oklch(0.723 0.014 214.4);
+  --app-background: oklch(0.987 0.002 197.1);
 }
 
 .dark {
@@ -76,11 +76,13 @@
   --sidebar-accent-foreground: oklch(0.987 0.002 197.1);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.56 0.021 213.5);
+  --app-background: oklch(0.0148 0.004 228.8);
 }
 
 @theme inline {
   --font-sans: 'DM Sans Variable', sans-serif;
   --color-background: var(--background);
+  --color-app-background: var(--app-background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);

@@ -1,10 +1,13 @@
 import { HeadContent, Scripts, createRootRoute } from '@tanstack/react-router'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { TanStackDevtools } from '@tanstack/react-devtools'
-import { ConvexProvider } from 'convex/react'
+import { ClerkProvider, useAuth } from '@clerk/tanstack-react-start'
+import { ConvexProviderWithClerk } from 'convex/react-clerk'
 
 import { convex } from '../lib/convex'
 import appCss from '../styles.css?url'
+
+import { ThemeProvider } from '../components/theme-provider'
 
 export const Route = createRootRoute({
   head: () => ({
@@ -17,7 +20,7 @@ export const Route = createRootRoute({
         content: 'width=device-width, initial-scale=1',
       },
       {
-        title: 'TanStack Start Starter',
+        title: 'Tasklane — Realtime Collaborative Workspace',
       },
     ],
     links: [
@@ -31,13 +34,21 @@ export const Route = createRootRoute({
 })
 
 function RootDocument({ children }: { children: React.ReactNode }) {
+  const publishableKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY
+
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
         <HeadContent />
       </head>
-      <body>
-        <ConvexProvider client={convex}>{children}</ConvexProvider>
+      <body className="min-h-screen bg-app-background font-sans text-foreground antialiased selection:bg-primary/10">
+        <ThemeProvider defaultTheme="system" storageKey="theme">
+          <ClerkProvider publishableKey={publishableKey}>
+            <ConvexProviderWithClerk client={convex} useAuth={useAuth}>
+              {children}
+            </ConvexProviderWithClerk>
+          </ClerkProvider>
+        </ThemeProvider>
         <TanStackDevtools
           config={{
             position: 'bottom-right',

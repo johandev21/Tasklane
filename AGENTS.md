@@ -26,6 +26,20 @@ Run all commands from `app/`. Use `pnpm` (and `pnpm dlx`) for tooling, not npm/n
 - Changing architecture or the stack: read the ADRs in `docs/adr/` first.
 - Unsure which repo skill applies: consult the `ask-matt` skill.
 
+## Agent skills
+
+### Issue tracker
+
+Issues and specs live as GitHub issues. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+The five canonical triage labels: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context — one root `CONTEXT.md` plus `docs/adr/`. See `docs/agents/domain.md`.
+
 ## Verify your work
 
 Before declaring a task done that touched `app/`: run `pnpm typecheck`, `pnpm lint`, and `pnpm check` from `app/`.
