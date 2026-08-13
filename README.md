@@ -2,8 +2,6 @@
 
 Plataforma de gestión de proyectos y colaboración en tiempo real estructurada mediante tableros, listas y tarjetas.
 
----
-
 ## Tabla de Contenidos
 
 - [Acerca del Proyecto](#acerca-del-proyecto)
@@ -17,13 +15,9 @@ Plataforma de gestión de proyectos y colaboración en tiempo real estructurada 
   - [Instalación y Ejecución](#instalación-y-ejecución)
   - [Comandos Disponibles](#comandos-disponibles)
 
----
-
 ## Acerca del Proyecto
 
 Tasklane es una aplicación web de gestión visual del trabajo diseñada para equipos de alto rendimiento. Su objetivo central es ofrecer una experiencia de colaboración fluida e instantánea: cualquier cambio realizado por un miembro (mover tarjetas, editar descripciones, asignar etiquetas o publicar comentarios) se refleja de forma inmediata en las pantallas de todos los usuarios conectados sin necesidad de recargar la página.
-
----
 
 ## Modelo de Dominio
 
@@ -44,8 +38,6 @@ El proyecto sigue un lenguaje ubicuo estricto para garantizar consistencia entre
 | **Activity** | Registro de auditoría cronológico inverso de las acciones ejecutadas en el Board. |
 | **Presence** | Indicador en tiempo real de los miembros activos visualizando el Board mediante latidos (heartbeats). |
 
----
-
 ## Stack Tecnológico
 
 - **Frontend**: [TanStack Start](https://tanstack.com/start) (React 19 con renderizado en servidor y enrutamiento completamente tipado).
@@ -56,8 +48,6 @@ El proyecto sigue un lenguaje ubicuo estricto para garantizar consistencia entre
 - **Testing**: [Vitest](https://vitest.dev/) con `convex-test` para pruebas unitarias en memoria contra base de datos aislada.
 - **Gestor de Paquetes**: [pnpm](https://pnpm.io/).
 
----
-
 ## Decisiones de Arquitectura
 
 El desarrollo se fundamenta en Registros de Decisiones Arquitectónicas (ADRs) documentados en `docs/adr/`:
@@ -65,8 +55,6 @@ El desarrollo se fundamenta en Registros de Decisiones Arquitectónicas (ADRs) d
 1. **ADR 0001 (Stack Unificado)**: Convex centraliza persistencia, funciones de servidor y suscripciones reactivas eliminando la necesidad de capas ORM o servidores Socket.io dedicados.
 2. **ADR 0002 (Autenticación Delegada)**: Clerk gestiona el ciclo de vida de las credenciales. Convex verifica la firma JWT contra el endpoint JWKS de Clerk en cada invocación de consulta o mutación.
 3. **ADR 0003 (Tiempo Real y Ordenamiento)**: Las lecturas de tableros son consultas reactivas en vivo. El reordenamiento de listas y tarjetas utiliza un modelo basado en anclas posicionales resueltas en el servidor para evitar condiciones de carrera. La presencia se implementa mediante una tabla de latidos periódicos depurada automáticamente.
-
----
 
 ## Estructura del Proyecto
 
@@ -85,8 +73,6 @@ El desarrollo se fundamenta en Registros de Decisiones Arquitectónicas (ADRs) d
     │   └── ...
     └── package.json
 ```
-
----
 
 ## Guía de Inicio Rápido
 
@@ -137,8 +123,6 @@ pnpm dev
 ```
 
 4. Abra [http://localhost:3000](http://localhost:3000) en su navegador.
-
----
 
 ### Comandos Disponibles
 
