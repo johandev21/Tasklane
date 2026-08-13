@@ -98,7 +98,7 @@ function LandingPage() {
               {/* Mockup Board Header */}
               <div className="flex flex-wrap items-center justify-between gap-3 pb-4">
                 <div className="flex items-center gap-3">
-                    <KanbanSquare className="size-8" />
+                  <KanbanSquare className="size-8" />
                   <div>
                     <div className="flex items-center gap-2">
                       <h2 className="font-heading text-base font-bold tracking-tight">
