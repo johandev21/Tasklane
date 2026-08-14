@@ -1,26 +1,27 @@
+// Three variants of the dashboard / boards page, switchable via ?variant=, on the existing /home route.
 import { useEffect, useState } from 'react'
-import { Link, createFileRoute } from '@tanstack/react-router'
+import {
+  Link,
+  createFileRoute,
+  useNavigate,
+  useSearch,
+} from '@tanstack/react-router'
 import { UserButton, useAuth, useUser } from '@clerk/tanstack-react-start'
 import { useMutation, useQuery } from 'convex/react'
 import { api } from '../../convex/_generated/api'
-import { ArrowRight, FolderPlus, KanbanSquare, Plus } from 'lucide-react'
+import type { Id } from '../../convex/_generated/dataModel'
 
 import { Button } from '#/components/ui/button.tsx'
 import { Badge } from '#/components/ui/badge.tsx'
 import {
   Card,
+  CardAction,
   CardContent,
   CardDescription,
   CardFooter,
   CardHeader,
   CardTitle,
 } from '#/components/ui/card.tsx'
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarGroup,
-  AvatarGroupCount,
-} from '#/components/ui/avatar.tsx'
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -34,12 +35,10 @@ import {
   EmptyContent,
   EmptyDescription,
   EmptyHeader,
-  EmptyMedia,
   EmptyTitle,
 } from '#/components/ui/empty.tsx'
 import {
   Dialog,
-  DialogClose,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -54,23 +53,68 @@ import {
   TabsList,
   TabsTrigger,
 } from '#/components/ui/tabs.tsx'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '#/components/ui/table.tsx'
+import { Skeleton } from '#/components/ui/skeleton.tsx'
+import { Spinner } from '#/components/ui/spinner.tsx'
 import { ModeToggle } from '#/components/mode-toggle.tsx'
+import { PrototypeSwitcher } from '#/components/prototype-switcher.tsx'
+import type { VariantOption } from '#/components/prototype-switcher.tsx'
+
+interface HomeSearch {
+  variant?: 'A' | 'B' | 'C'
+}
 
 export const Route = createFileRoute('/home')({
+  validateSearch: (search: Record<string, unknown>): HomeSearch => {
+    const variant = search.variant as string | undefined
+    return {
+      variant:
+        variant === 'A' || variant === 'B' || variant === 'C' ? variant : 'A',
+    }
+  },
   component: HomePage,
 })
 
+const PROTOTYPE_VARIANTS: VariantOption[] = [
+  { id: 'A', label: 'Sectioned Grid' },
+  { id: 'B', label: 'Dense Table' },
+  { id: 'C', label: 'Catalog & Tile' },
+]
+
+export interface BoardSummary {
+  _id: Id<'boards'>
+  _creationTime: number
+  name: string
+  ownerId: string
+  isOwner: boolean
+  memberCount: number
+  listsCount: number
+}
+
 function HomePage() {
+  const search = useSearch({ from: '/home' })
+  const navigate = useNavigate({ from: '/home' })
+  const activeVariant = search.variant ?? 'A'
+
   const { isLoaded, isSignedIn } = useAuth()
   const { user } = useUser()
   const upsertUser = useMutation(api.users.upsertUser)
-  const dbUser = useQuery(api.users.currentUser)
-  const [activeTab, setActiveTab] = useState('all')
+  const boards = useQuery(api.boards.list)
+  const createBoardMutation = useMutation(api.boards.create)
+
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
   const [boardName, setBoardName] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
-  // Sync authenticated Clerk user to Convex users table
+  // Sync authenticated Clerk user to Convex users cache table
   useEffect(() => {
     if (isLoaded && user) {
       upsertUser({
@@ -78,72 +122,32 @@ function HomePage() {
         email: user.primaryEmailAddress?.emailAddress || undefined,
         imageUrl: user.imageUrl || undefined,
       }).catch((err) => {
-        console.error('Failed to upsert user in Convex:', err)
+        console.error('Failed to sync user in Convex:', err)
       })
     }
   }, [isLoaded, user, upsertUser])
 
-  // Sample workspace content matching design brief Section 7
-  const sampleBoards = [
-    {
-      id: 'board-1',
-      name: 'Mobile App Launch',
-      isOwner: true,
-      description: 'Q3 Product launch milestone across iOS, Android, and Web.',
-      listsCount: 3,
-      cardsCount: 7,
-      members: [
-        { name: 'Priya Patel', initials: 'PP' },
-        { name: 'Marcus Chen', initials: 'MC' },
-        { name: 'Ana Gomez', initials: 'AG' },
-        { name: 'Leo Rossi', initials: 'LR' },
-      ],
-    },
-    {
-      id: 'board-2',
-      name: 'Editorial Calendar',
-      isOwner: false,
-      description: 'Weekly content production, newsletters, and launch blogs.',
-      listsCount: 4,
-      cardsCount: 12,
-      members: [
-        { name: 'Ana Gomez', initials: 'AG' },
-        { name: 'Marcus Chen', initials: 'MC' },
-      ],
-    },
-    {
-      id: 'board-3',
-      name: 'Q3 Hiring',
-      isOwner: false,
-      description:
-        'Pipeline for Senior Full-Stack and Product Design candidates.',
-      listsCount: 5,
-      cardsCount: 8,
-      members: [
-        { name: 'Priya Patel', initials: 'PP' },
-        { name: 'Leo Rossi', initials: 'LR' },
-      ],
-    },
-  ]
-
-  const filteredBoards = sampleBoards.filter((board) => {
-    if (activeTab === 'owned') return board.isOwner
-    if (activeTab === 'shared') return !board.isOwner
-    return true
-  })
-
-  const userName = dbUser?.name || user?.firstName || user?.fullName || 'there'
-
-  const handleCreateBoard = (e: React.FormEvent) => {
+  const handleCreateBoard = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!boardName.trim()) return
+    const trimmed = boardName.trim()
+    if (!trimmed) {
+      setErrorMessage('Board name is required')
+      return
+    }
 
-    setIsSubmitting(true)
-    setTimeout(() => {
-      setIsSubmitting(false)
+    try {
+      setIsSubmitting(true)
+      setErrorMessage(null)
+      await createBoardMutation({ name: trimmed })
       setBoardName('')
       setCreateDialogOpen(false)
-    }, 300)
+    } catch (err) {
+      setErrorMessage(
+        err instanceof Error ? err.message : 'Failed to create board',
+      )
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   if (isLoaded && !isSignedIn) {
@@ -168,20 +172,19 @@ function HomePage() {
     )
   }
 
+  const isLoadingBoards = boards === undefined
+
   return (
     <div className="flex min-h-screen flex-col bg-app-background selection:bg-primary/10">
-      {/* Header with single user profile and clean breadcrumbs */}
-      <header className="sticky top-0 z-40 bg-app-background/85 backdrop-blur-md">
+      {/* Top Application Header */}
+      <header className="sticky top-0 z-40 border-b border-border/40 bg-app-background/85 backdrop-blur-md">
         <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4 sm:px-6">
           <div className="flex items-center gap-2">
             <Link
               to="/home"
-              className="flex items-center gap-2 font-semibold tracking-tight transition-opacity hover:opacity-90"
+              className="font-heading text-base font-semibold tracking-tight text-foreground transition-opacity hover:opacity-90"
             >
-              <KanbanSquare className="size-5.5 shrink-0 text-foreground" />
-              <span className="font-heading text-base font-semibold tracking-tight text-foreground">
-                Tasklane
-              </span>
+              Tasklane
             </Link>
 
             <Breadcrumb className="hidden sm:block">
@@ -200,12 +203,12 @@ function HomePage() {
             </Breadcrumb>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2.5">
             <ModeToggle />
             <UserButton
               appearance={{
                 elements: {
-                  userButtonAvatarBox: 'size-8 ring-1 ring-border',
+                  avatarBox: 'size-8 rounded-full ring-1 ring-border',
                 },
               }}
             />
@@ -213,179 +216,402 @@ function HomePage() {
         </div>
       </header>
 
-      {/* Main Workspace Dashboard Content */}
-      <main className="flex-1">
+      {/* Main Content Area */}
+      <main className="flex-1 pb-20">
         <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
-          <div className="flex flex-col gap-6">
-            {/* Clean Dashboard Title Bar with SINGLE Create Board action */}
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <h1 className="font-heading text-2xl font-bold tracking-tight sm:text-3xl">
-                  Boards
-                </h1>
-                <p className="text-sm text-muted-foreground">
-                  Welcome back, {userName}. Select a Board to open your Lists
-                  and Cards.
-                </p>
-              </div>
-
-              <div>
-                <Button size="sm" onClick={() => setCreateDialogOpen(true)}>
-                  <Plus data-icon="inline-start" />
-                  Create Board
-                </Button>
-              </div>
+          {isLoadingBoards ? (
+            <DashboardLoadingSkeleton />
+          ) : boards.length === 0 ? (
+            <div className="pt-12">
+              <Empty className="mx-auto max-w-lg border border-border bg-card/60 p-8 shadow-xs">
+                <EmptyHeader>
+                  <EmptyTitle>No boards yet</EmptyTitle>
+                  <EmptyDescription>
+                    Create your first board to start organizing work through
+                    lists and cards, with real-time collaboration.
+                  </EmptyDescription>
+                </EmptyHeader>
+                <EmptyContent>
+                  <Button onClick={() => setCreateDialogOpen(true)}>
+                    Create Board
+                  </Button>
+                </EmptyContent>
+              </Empty>
             </div>
-
-            {/* Boards Section with Clean Tabs */}
-            <div className="flex flex-col gap-5">
-              <Tabs value={activeTab} onValueChange={setActiveTab}>
-                <TabsList>
-                  <TabsTrigger value="all">All Boards</TabsTrigger>
-                  <TabsTrigger value="owned">Owned by you</TabsTrigger>
-                  <TabsTrigger value="shared">Shared with you</TabsTrigger>
-                </TabsList>
-
-                {['all', 'owned', 'shared'].map((tabKey) => (
-                  <TabsContent key={tabKey} value={tabKey} className="mt-5">
-                    {filteredBoards.length > 0 ? (
-                      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-                        {filteredBoards.map((board) => (
-                          <Card
-                            key={board.id}
-                            className="border-border transition-all hover:border-foreground/20 hover:shadow-xs"
-                          >
-                            <CardHeader>
-                              <div className="flex items-center justify-between gap-2">
-                                <Badge
-                                  variant={
-                                    board.isOwner ? 'default' : 'secondary'
-                                  }
-                                >
-                                  {board.isOwner ? 'Owner' : 'Member'}
-                                </Badge>
-                              </div>
-                              <CardTitle className="mt-2 text-lg">
-                                {board.name}
-                              </CardTitle>
-                              <CardDescription className="line-clamp-2">
-                                {board.description}
-                              </CardDescription>
-                            </CardHeader>
-
-                            <CardContent>
-                              <div className="flex items-center justify-between text-xs text-muted-foreground">
-                                <span>
-                                  {board.listsCount} Lists · {board.cardsCount}{' '}
-                                  Cards
-                                </span>
-                                <AvatarGroup>
-                                  {board.members.map((member, i) => (
-                                    <Avatar key={i} size="sm">
-                                      <AvatarFallback className="text-[10px] font-medium">
-                                        {member.initials}
-                                      </AvatarFallback>
-                                    </Avatar>
-                                  ))}
-                                  {board.members.length > 3 && (
-                                    <AvatarGroupCount>
-                                      +{board.members.length - 3}
-                                    </AvatarGroupCount>
-                                  )}
-                                </AvatarGroup>
-                              </div>
-                            </CardContent>
-
-                            <CardFooter className="border-t border-border pt-3">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="gap-1.5"
-                                onClick={() => setCreateDialogOpen(true)}
-                              >
-                                <span>Open Board</span>
-                                <ArrowRight className="size-3.5" />
-                              </Button>
-                            </CardFooter>
-                          </Card>
-                        ))}
-                      </div>
-                    ) : (
-                      <Empty className="my-8 border border-border bg-card">
-                        <EmptyMedia variant="icon">
-                          <FolderPlus className="size-6" />
-                        </EmptyMedia>
-                        <EmptyHeader>
-                          <EmptyTitle>No Boards found</EmptyTitle>
-                          <EmptyDescription>
-                            You don't have any boards in this view. Create a new
-                            Board to get started.
-                          </EmptyDescription>
-                        </EmptyHeader>
-                        <EmptyContent>
-                          <Button
-                            size="sm"
-                            onClick={() => setCreateDialogOpen(true)}
-                          >
-                            <Plus data-icon="inline-start" />
-                            Create Board
-                          </Button>
-                        </EmptyContent>
-                      </Empty>
-                    )}
-                  </TabsContent>
-                ))}
-              </Tabs>
-            </div>
-          </div>
+          ) : (
+            <>
+              {activeVariant === 'A' && (
+                <VariantA
+                  boards={boards}
+                  onOpenCreate={() => setCreateDialogOpen(true)}
+                />
+              )}
+              {activeVariant === 'B' && (
+                <VariantB
+                  boards={boards}
+                  onOpenCreate={() => setCreateDialogOpen(true)}
+                />
+              )}
+              {activeVariant === 'C' && (
+                <VariantC
+                  boards={boards}
+                  onOpenCreate={() => setCreateDialogOpen(true)}
+                />
+              )}
+            </>
+          )}
         </div>
       </main>
 
-      {/* Single Create Board Dialog */}
+      {/* Create Board Modal */}
       <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-        <DialogContent className="border-border sm:max-w-md">
+        <DialogContent>
           <form onSubmit={handleCreateBoard}>
             <DialogHeader>
-              <DialogTitle>Create Board</DialogTitle>
+              <DialogTitle>Create board</DialogTitle>
               <DialogDescription>
-                A Board is a collaborative space for organizing work through
-                Lists and Cards.
+                Boards are collaborative spaces for organizing work with
+                members.
               </DialogDescription>
             </DialogHeader>
 
             <div className="py-4">
               <FieldGroup>
-                <Field>
-                  <FieldLabel htmlFor="new-board-name">Board Name</FieldLabel>
+                <Field data-invalid={errorMessage ? true : undefined}>
+                  <FieldLabel htmlFor="board-title">Board title</FieldLabel>
                   <Input
-                    id="new-board-name"
-                    placeholder="e.g. Mobile App Launch"
+                    id="board-title"
                     value={boardName}
                     onChange={(e) => setBoardName(e.target.value)}
+                    placeholder="e.g. Mobile App Launch"
                     autoFocus
-                    required
+                    maxLength={100}
+                    disabled={isSubmitting}
+                    aria-invalid={errorMessage ? true : undefined}
                   />
+                  {errorMessage ? (
+                    <p className="mt-1 text-xs text-destructive">
+                      {errorMessage}
+                    </p>
+                  ) : null}
                 </Field>
               </FieldGroup>
             </div>
 
             <DialogFooter>
-              <DialogClose asChild>
-                <Button type="button" variant="outline">
-                  Cancel
-                </Button>
-              </DialogClose>
               <Button
-                type="submit"
-                disabled={isSubmitting || !boardName.trim()}
+                type="button"
+                variant="outline"
+                onClick={() => setCreateDialogOpen(false)}
+                disabled={isSubmitting}
               >
-                <Plus data-icon="inline-start" />
-                {isSubmitting ? 'Creating...' : 'Create Board'}
+                Cancel
+              </Button>
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? (
+                  <>
+                    <Spinner data-icon="inline-start" />
+                    Creating...
+                  </>
+                ) : (
+                  'Create'
+                )}
               </Button>
             </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Floating Prototype Switcher */}
+      <PrototypeSwitcher
+        variants={PROTOTYPE_VARIANTS}
+        currentVariant={activeVariant}
+        onSelectVariant={(variantId) => {
+          navigate({
+            search: (prev) => ({
+              ...prev,
+              variant: variantId as 'A' | 'B' | 'C',
+            }),
+            replace: true,
+          })
+        }}
+      />
     </div>
+  )
+}
+
+/**
+ * Loading skeleton state
+ */
+function DashboardLoadingSkeleton() {
+  return (
+    <div className="flex flex-col gap-6">
+      <div className="flex items-center justify-between">
+        <Skeleton className="h-8 w-48" />
+        <Skeleton className="h-8 w-28" />
+      </div>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <Skeleton className="h-36 w-full rounded-2xl" />
+        <Skeleton className="h-36 w-full rounded-2xl" />
+        <Skeleton className="h-36 w-full rounded-2xl" />
+      </div>
+    </div>
+  )
+}
+
+/**
+ * Variant A: Structured Grouped Grid
+ * Divides boards into clearly labeled sections (Owned Boards vs Shared with You)
+ */
+export function VariantA({
+  boards,
+  onOpenCreate,
+}: {
+  boards: BoardSummary[]
+  onOpenCreate: () => void
+}) {
+  const ownedBoards = boards.filter((b) => b.isOwner)
+  const sharedBoards = boards.filter((b) => !b.isOwner)
+
+  return (
+    <div className="flex flex-col gap-8">
+      {/* Top Header & Primary Action */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-baseline gap-2">
+          <h1 className="font-heading text-xl font-semibold tracking-tight text-foreground">
+            Boards
+          </h1>
+          <span className="text-xs text-muted-foreground">
+            {boards.length} total
+          </span>
+        </div>
+
+        <Button onClick={onOpenCreate}>Create Board</Button>
+      </div>
+
+      {/* Owned Boards Section */}
+      {ownedBoards.length > 0 && (
+        <section className="flex flex-col gap-3">
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Owned by you ({ownedBoards.length})
+          </h2>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {ownedBoards.map((board) => (
+              <BoardCard key={board._id} board={board} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Shared Boards Section */}
+      {sharedBoards.length > 0 && (
+        <section className="flex flex-col gap-3">
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Shared with you ({sharedBoards.length})
+          </h2>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {sharedBoards.map((board) => (
+              <BoardCard key={board._id} board={board} />
+            ))}
+          </div>
+        </section>
+      )}
+    </div>
+  )
+}
+
+/**
+ * Variant B: Unified Dense Table View
+ * High-density tabular layout with role filtering and fast scanning
+ */
+export function VariantB({
+  boards,
+  onOpenCreate,
+}: {
+  boards: BoardSummary[]
+  onOpenCreate: () => void
+}) {
+  const [tab, setTab] = useState<'all' | 'owned' | 'shared'>('all')
+
+  const filteredBoards = boards.filter((b) => {
+    if (tab === 'owned') return b.isOwner
+    if (tab === 'shared') return !b.isOwner
+    return true
+  })
+
+  return (
+    <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="font-heading text-xl font-semibold tracking-tight text-foreground">
+            Workspace Boards
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            Dense list view of all collaborative boards across your account.
+          </p>
+        </div>
+
+        <Button onClick={onOpenCreate}>Create Board</Button>
+      </div>
+
+      <Tabs
+        value={tab}
+        onValueChange={(val) => setTab(val as 'all' | 'owned' | 'shared')}
+      >
+        <TabsList>
+          <TabsTrigger value="all">All ({boards.length})</TabsTrigger>
+          <TabsTrigger value="owned">
+            Owned ({boards.filter((b) => b.isOwner).length})
+          </TabsTrigger>
+          <TabsTrigger value="shared">
+            Shared ({boards.filter((b) => !b.isOwner).length})
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value={tab} className="mt-4">
+          <div className="overflow-hidden rounded-2xl border border-border bg-card">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-[45%]">Board</TableHead>
+                  <TableHead className="w-[15%]">Role</TableHead>
+                  <TableHead className="w-[15%]">Members</TableHead>
+                  <TableHead className="w-[15%]">Lists</TableHead>
+                  <TableHead className="w-[10%] text-right">Action</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredBoards.map((board) => (
+                  <TableRow key={board._id}>
+                    <TableCell className="font-medium text-foreground">
+                      {board.name}
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        variant={board.isOwner ? 'default' : 'secondary'}
+                        className="text-xs"
+                      >
+                        {board.isOwner ? 'Owner' : 'Member'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {board.memberCount}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {board.listsCount}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button variant="ghost" size="xs">
+                        Open
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </TabsContent>
+      </Tabs>
+    </div>
+  )
+}
+
+/**
+ * Variant C: Workspace Board Catalog with Inline Create Tile
+ * Card catalog where the first item is an inline creation card
+ */
+export function VariantC({
+  boards,
+  onOpenCreate,
+}: {
+  boards: BoardSummary[]
+  onOpenCreate: () => void
+}) {
+  const [query, setQuery] = useState('')
+
+  const filteredBoards = boards.filter((b) =>
+    b.name.toLowerCase().includes(query.toLowerCase()),
+  )
+
+  return (
+    <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="font-heading text-xl font-semibold tracking-tight text-foreground">
+            Board Catalog
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            Search and launch workspace boards or quickly start a new one.
+          </p>
+        </div>
+
+        <div className="w-full sm:w-64">
+          <Input
+            placeholder="Search boards..."
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {/* Inline Create Tile */}
+        <button
+          type="button"
+          onClick={onOpenCreate}
+          className="flex min-h-[140px] flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-border/80 bg-card/40 p-6 text-center transition-colors hover:border-foreground/30 hover:bg-card focus-visible:border-ring focus-visible:outline-none"
+        >
+          <span className="text-sm font-medium text-foreground">
+            + Create new board
+          </span>
+          <span className="text-xs text-muted-foreground">
+            Start a new collaborative board
+          </span>
+        </button>
+
+        {/* Board Cards */}
+        {filteredBoards.map((board) => (
+          <BoardCard key={board._id} board={board} />
+        ))}
+      </div>
+    </div>
+  )
+}
+
+/**
+ * Standard Board Card Component
+ */
+function BoardCard({ board }: { board: BoardSummary }) {
+  return (
+    <Card className="transition-shadow hover:shadow-md">
+      <CardHeader>
+        <CardTitle className="truncate">{board.name}</CardTitle>
+        <CardAction>
+          <Badge
+            variant={board.isOwner ? 'default' : 'secondary'}
+            className="text-xs"
+          >
+            {board.isOwner ? 'Owner' : 'Member'}
+          </Badge>
+        </CardAction>
+        <CardDescription>
+          {board.listsCount === 1 ? '1 list' : `${board.listsCount} lists`}
+        </CardDescription>
+      </CardHeader>
+
+      <CardContent>
+        <div className="text-xs text-muted-foreground">
+          {board.memberCount === 1
+            ? '1 member'
+            : `${board.memberCount} members`}
+        </div>
+      </CardContent>
+
+      <CardFooter className="justify-end border-t border-border/40">
+        <Button variant="ghost" size="xs">
+          Open board
+        </Button>
+      </CardFooter>
+    </Card>
   )
 }

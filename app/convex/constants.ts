@@ -20,6 +20,7 @@ export type LabelColor = (typeof LABEL_COLORS)[number]
  * Every action that mutates a board or its nested entities produces an activity entry.
  */
 export const ACTIVITY_TYPES = [
+  'board_created',
   'list_created',
   'list_renamed',
   'card_created',
