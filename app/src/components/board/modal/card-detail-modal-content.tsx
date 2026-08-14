@@ -1,29 +1,48 @@
 import { CardModalTopBar } from './sections/card-modal-top-bar.tsx'
 import { CardModalTitle } from './sections/card-modal-title.tsx'
+import { CardModalLabels } from './sections/card-modal-labels.tsx'
 import { CardModalDueDate } from './sections/card-modal-due-date.tsx'
 import { CardModalDescription } from './sections/card-modal-description.tsx'
-import type { CardDoc, ListDoc } from '../types.ts'
+import type { CardDoc, ListDoc, LabelDoc } from '../types.ts'
 
 export interface CardDetailModalContentProps {
   card: CardDoc
   lists: ListDoc[]
+  boardLabels?: LabelDoc[]
+  cardLabels?: LabelDoc[]
+  isOwner?: boolean
   onSaveTitle: (title: string) => void
   onSaveDescription: (description: string) => void
   onUpdateDueDate: (dueDate: number | undefined) => void
   onMoveToList: (listId: ListDoc['_id']) => void
   onArchive: () => void
   onClose: () => void
+  onToggleLabel?: (label: LabelDoc) => void
+  onCreateLabel?: (name: string, color: string) => Promise<void> | void
+  onUpdateLabel?: (
+    labelId: LabelDoc['_id'],
+    name?: string,
+    color?: string,
+  ) => Promise<void> | void
+  onRemoveLabel?: (labelId: LabelDoc['_id']) => Promise<void> | void
 }
 
 export function CardDetailModalContent({
   card,
   lists,
+  boardLabels = [],
+  cardLabels = [],
+  isOwner = false,
   onSaveTitle,
   onSaveDescription,
   onUpdateDueDate,
   onMoveToList,
   onArchive,
   onClose,
+  onToggleLabel,
+  onCreateLabel,
+  onUpdateLabel,
+  onRemoveLabel,
 }: CardDetailModalContentProps) {
   const currentList = lists.find((l) => l._id === card.listId)
 
@@ -43,8 +62,21 @@ export function CardDetailModalContent({
         {/* Card Title Editor */}
         <CardModalTitle title={card.title} onSaveTitle={onSaveTitle} />
 
-        {/* Due Date Section */}
+        {/* Labels Section */}
         <div className="pt-1">
+          <CardModalLabels
+            boardLabels={boardLabels}
+            cardLabels={cardLabels}
+            isOwner={isOwner}
+            onToggleLabel={(label) => onToggleLabel?.(label)}
+            onCreateLabel={onCreateLabel}
+            onUpdateLabel={onUpdateLabel}
+            onRemoveLabel={onRemoveLabel}
+          />
+        </div>
+
+        {/* Due Date Section */}
+        <div className="pt-2 border-t border-border/40">
           <CardModalDueDate
             dueDate={card.dueDate}
             onUpdateDueDate={onUpdateDueDate}

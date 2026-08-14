@@ -12,14 +12,24 @@ import {
   TabsTrigger,
 } from '#/components/ui/tabs.tsx'
 import { Button } from '#/components/ui/button.tsx'
-import type { EnrichedActivityDoc, CardDoc } from './types.ts'
+import { LabelPaletteManager } from './labels/label-palette-manager.tsx'
+import type { EnrichedActivityDoc, CardDoc, LabelDoc } from './types.ts'
 
 export interface BoardMenuSheetProps {
   activities: EnrichedActivityDoc[]
   archivedCards?: CardDoc[]
+  labels?: LabelDoc[]
+  isOwner?: boolean
   isOpen: boolean
   onClose: () => void
   onRestoreCard?: (cardId: CardDoc['_id']) => void
+  onCreateLabel?: (name: string, color: string) => Promise<void> | void
+  onUpdateLabel?: (
+    labelId: LabelDoc['_id'],
+    name?: string,
+    color?: string,
+  ) => Promise<void> | void
+  onRemoveLabel?: (labelId: LabelDoc['_id']) => Promise<void> | void
 }
 
 function formatRelativeTime(timestamp: number): string {
@@ -68,6 +78,10 @@ function formatActivityMessage(act: EnrichedActivityDoc): string {
       return `changed due date on "${payload.title ?? 'card'}"`
     case 'due_date_cleared':
       return `removed due date from "${payload.title ?? 'card'}"`
+    case 'label_added':
+      return `added label "${payload.labelName ?? 'Label'}" to "${payload.title ?? 'card'}"`
+    case 'label_removed':
+      return `removed label "${payload.labelName ?? 'Label'}" from "${payload.title ?? 'card'}"`
     case 'card_moved':
       return `moved card "${payload.title ?? ''}"`
     default:
@@ -78,9 +92,14 @@ function formatActivityMessage(act: EnrichedActivityDoc): string {
 export function BoardMenuSheet({
   activities,
   archivedCards = [],
+  labels = [],
+  isOwner = false,
   isOpen,
   onClose,
   onRestoreCard,
+  onCreateLabel,
+  onUpdateLabel,
+  onRemoveLabel,
 }: BoardMenuSheetProps) {
   return (
     <Sheet open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -96,12 +115,18 @@ export function BoardMenuSheet({
 
         <Tabs defaultValue="activity" className="flex-1 flex flex-col min-h-0">
           <div className="px-4 pt-1 pb-2 shrink-0">
-            <TabsList className="w-full grid grid-cols-2">
+            <TabsList className="w-full grid grid-cols-3">
               <TabsTrigger
                 value="activity"
                 className="text-xs sm:text-sm font-medium"
               >
                 Activity
+              </TabsTrigger>
+              <TabsTrigger
+                value="labels"
+                className="text-xs sm:text-sm font-medium"
+              >
+                Labels
               </TabsTrigger>
               <TabsTrigger
                 value="archived"
@@ -144,6 +169,20 @@ export function BoardMenuSheet({
                 No activity recorded on this board yet.
               </div>
             )}
+          </TabsContent>
+
+          {/* Label Palette Manager */}
+          <TabsContent
+            value="labels"
+            className="flex-1 overflow-y-auto p-4 flex flex-col min-h-0"
+          >
+            <LabelPaletteManager
+              labels={labels}
+              isOwner={isOwner}
+              onCreateLabel={onCreateLabel}
+              onUpdateLabel={onUpdateLabel}
+              onRemoveLabel={onRemoveLabel}
+            />
           </TabsContent>
 
           {/* Archived Cards List */}

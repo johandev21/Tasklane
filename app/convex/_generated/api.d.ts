@@ -13,6 +13,7 @@ import type * as auth_helpers from "../auth_helpers.js";
 import type * as boards from "../boards.js";
 import type * as cards from "../cards.js";
 import type * as constants from "../constants.js";
+import type * as labels from "../labels.js";
 import type * as lists from "../lists.js";
 import type * as users from "../users.js";
 
@@ -28,6 +29,7 @@ declare const fullApi: ApiFromModules<{
   boards: typeof boards;
   cards: typeof cards;
   constants: typeof constants;
+  labels: typeof labels;
   lists: typeof lists;
   users: typeof users;
 }>;

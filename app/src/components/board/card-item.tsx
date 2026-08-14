@@ -1,10 +1,12 @@
 import { useState } from 'react'
 import { Edit2, Archive, Clock, Flame, AlignLeft } from 'lucide-react'
 import { Button } from '#/components/ui/button.tsx'
-import type { CardDoc } from './types.ts'
+import { getLabelColor } from './labels/label-colors.ts'
+import type { CardDoc, LabelDoc } from './types.ts'
 
 export interface CardItemProps {
   card: CardDoc
+  labels?: LabelDoc[]
   onRenameCard: (cardId: CardDoc['_id'], newTitle: string) => void
   onArchiveCard: (cardId: CardDoc['_id']) => void
   onCardClick?: (card: CardDoc) => void
@@ -12,6 +14,7 @@ export interface CardItemProps {
 
 export function CardItem({
   card,
+  labels = [],
   onRenameCard,
   onArchiveCard,
   onCardClick,
@@ -40,6 +43,27 @@ export function CardItem({
       }}
       className="group relative rounded-xl border border-border/80 bg-card p-3 shadow-2xs transition-all duration-150 hover:border-border hover:shadow-md hover:-translate-y-0.5 cursor-pointer flex flex-col gap-2"
     >
+      {/* Label Badges */}
+      {!isEditing && labels.length > 0 && (
+        <div className="flex flex-wrap gap-1">
+          {labels.map((lbl) => {
+            const colorDef = getLabelColor(lbl.color)
+            return (
+              <span
+                key={lbl._id}
+                className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] font-semibold border ${colorDef.badgeClass} max-w-full`}
+                title={lbl.name}
+              >
+                <span
+                  className={`size-1.5 rounded-full ${colorDef.dotClass} shrink-0`}
+                />
+                <span className="truncate break-all">{lbl.name}</span>
+              </span>
+            )
+          })}
+        </div>
+      )}
+
       {isEditing ? (
         <div
           className="flex flex-col gap-1.5"

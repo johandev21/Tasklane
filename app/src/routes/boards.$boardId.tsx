@@ -20,7 +20,7 @@ import { BoardCanvas } from '#/components/board/board-canvas.tsx'
 import { DeleteListDialog } from '#/components/board/delete-list-dialog.tsx'
 import { BoardMenuSheet } from '#/components/board/board-menu-sheet.tsx'
 import { BoardSkeleton } from '#/components/board/board-skeleton.tsx'
-import type { ListDoc, CardDoc } from '#/components/board/types.ts'
+import type { ListDoc, CardDoc, LabelDoc } from '#/components/board/types.ts'
 
 export const Route = createFileRoute('/boards/$boardId')({
   component: BoardPage,
@@ -32,7 +32,7 @@ function BoardPage() {
 
   const { isLoaded, isSignedIn } = useAuth()
 
-  // Live subscriptions to board, lists, active cards, archived cards, and activity log
+  // Live subscriptions to board, lists, active cards, archived cards, activity log, and labels
   const board = useQuery(api.boards.get, { boardId: typedBoardId })
   const lists = useQuery(api.lists.list, { boardId: typedBoardId })
   const cards = useQuery(api.cards.listByBoard, { boardId: typedBoardId })
@@ -40,6 +40,12 @@ function BoardPage() {
     boardId: typedBoardId,
   })
   const activities = useQuery(api.activity.list, { boardId: typedBoardId })
+  const boardLabels = useQuery(api.labels.listByBoard, {
+    boardId: typedBoardId,
+  })
+  const cardLabelsList = useQuery(api.labels.listCardLabelsForBoard, {
+    boardId: typedBoardId,
+  })
 
   // List Mutations
   const createListMutation = useMutation(api.lists.create)
@@ -55,6 +61,12 @@ function BoardPage() {
   const archiveCardMutation = useMutation(api.cards.archive)
   const restoreCardMutation = useMutation(api.cards.restore)
   const moveCardToListMutation = useMutation(api.cards.moveToList)
+
+  // Label Mutations
+  const createLabelMutation = useMutation(api.labels.create)
+  const updateLabelMutation = useMutation(api.labels.update)
+  const removeLabelMutation = useMutation(api.labels.remove)
+  const toggleCardLabelMutation = useMutation(api.labels.toggleOnCard)
 
   // Local UI State
   const [isActivityMenuOpen, setIsActivityMenuOpen] = useState(false)
@@ -111,6 +123,17 @@ function BoardPage() {
         </Empty>
       </div>
     )
+  }
+
+  // Group card labels by cardId
+  const cardLabelsMap: Record<string, LabelDoc[] | undefined> = {}
+  for (const item of cardLabelsList ?? []) {
+    const existing = cardLabelsMap[item.cardId]
+    if (existing) {
+      existing.push(item.label)
+    } else {
+      cardLabelsMap[item.cardId] = [item.label]
+    }
   }
 
   const handleAddList = async (title: string) => {
@@ -201,11 +224,50 @@ function BoardPage() {
     })
   }
 
+  const handleCreateLabel = async (name: string, color: string) => {
+    await createLabelMutation({
+      boardId: typedBoardId,
+      name,
+      color,
+    })
+  }
+
+  const handleUpdateLabel = async (
+    labelId: LabelDoc['_id'],
+    name?: string,
+    color?: string,
+  ) => {
+    await updateLabelMutation({
+      labelId,
+      name,
+      color,
+    })
+  }
+
+  const handleRemoveLabel = async (labelId: LabelDoc['_id']) => {
+    await removeLabelMutation({
+      labelId,
+    })
+  }
+
+  const handleToggleCardLabel = async (
+    cardId: CardDoc['_id'],
+    label: LabelDoc,
+  ) => {
+    await toggleCardLabelMutation({
+      cardId,
+      labelId: label._id,
+    })
+  }
+
   const deletedListCardCount = listBeingDeleted
     ? cards.filter((c) => c.listId === listBeingDeleted._id).length
     : 0
 
   const activeCard = cards.find((c) => c._id === activeCardId) ?? null
+  const activeCardLabels = activeCardId
+    ? (cardLabelsMap[activeCardId] ?? [])
+    : []
 
   return (
     <div className="flex h-screen flex-col bg-app-background font-sans overflow-hidden">
@@ -221,6 +283,7 @@ function BoardPage() {
       <BoardCanvas
         lists={lists}
         cards={cards}
+        cardLabelsMap={cardLabelsMap}
         onAddList={handleAddList}
         onRenameList={handleRenameList}
         onDeleteList={(list) => setListBeingDeleted(list)}
@@ -235,6 +298,9 @@ function BoardPage() {
       <CardDetailModal
         card={activeCard}
         lists={lists}
+        boardLabels={boardLabels ?? []}
+        cardLabels={activeCardLabels}
+        isOwner={board.isOwner}
         isOpen={Boolean(activeCard)}
         onClose={() => setActiveCardId(null)}
         onSaveTitle={handleRenameCard}
@@ -242,6 +308,10 @@ function BoardPage() {
         onUpdateDueDate={handleUpdateDueDate}
         onMoveToList={handleMoveCardToList}
         onArchive={handleArchiveCard}
+        onToggleLabel={handleToggleCardLabel}
+        onCreateLabel={handleCreateLabel}
+        onUpdateLabel={handleUpdateLabel}
+        onRemoveLabel={handleRemoveLabel}
       />
 
       {/* Delete List Confirmation Dialog */}
@@ -253,13 +323,18 @@ function BoardPage() {
         onConfirm={handleDeleteListConfirm}
       />
 
-      {/* Board Menu / Activity Feed & Archive Sheet */}
+      {/* Board Menu / Activity Feed, Labels Palette & Archive Sheet */}
       <BoardMenuSheet
         activities={activities ?? []}
         archivedCards={archivedCards ?? []}
+        labels={boardLabels ?? []}
+        isOwner={board.isOwner}
         isOpen={isActivityMenuOpen}
         onClose={() => setIsActivityMenuOpen(false)}
         onRestoreCard={handleRestoreCard}
+        onCreateLabel={handleCreateLabel}
+        onUpdateLabel={handleUpdateLabel}
+        onRemoveLabel={handleRemoveLabel}
       />
     </div>
   )
