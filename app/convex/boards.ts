@@ -95,11 +95,25 @@ export const list = query({
           .withIndex('by_boardId', (q) => q.eq('boardId', board._id))
           .collect()
 
+        const cards = await ctx.db
+          .query('cards')
+          .withIndex('by_boardId', (q) => q.eq('boardId', board._id))
+          .collect()
+
+        const activeCards = cards.filter((c) => !c.archived)
+
+        const listBreakdown = lists.map((l) => ({
+          name: l.title,
+          cardsCount: activeCards.filter((c) => c.listId === l._id).length,
+        }))
+
         return {
           ...board,
           isOwner,
           memberCount: members.length + 1, // members plus owner
           listsCount: lists.length,
+          cardsCount: activeCards.length,
+          lists: listBreakdown,
         }
       }),
     )
