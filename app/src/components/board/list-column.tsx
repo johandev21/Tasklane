@@ -23,6 +23,7 @@ export interface ListColumnProps {
   cards: CardDoc[]
   cardLabelsMap?: Record<string, LabelDoc[] | undefined>
   cardAssigneesMap?: Record<string, BoardMemberUser[] | undefined>
+  cardCommentsCountMap?: Record<string, number | undefined>
   onRenameList: (listId: ListDoc['_id'], newTitle: string) => void
   onDeleteList: (list: ListDoc) => void
   onArchiveAllCards: (listId: ListDoc['_id']) => void
@@ -37,6 +38,7 @@ export const ListColumn = memo(function ListColumn({
   cards,
   cardLabelsMap = {},
   cardAssigneesMap = {},
+  cardCommentsCountMap = {},
   onRenameList,
   onDeleteList,
   onArchiveAllCards,
@@ -62,7 +64,7 @@ export const ListColumn = memo(function ListColumn({
   return (
     <div className="group/col flex max-h-[calc(100vh-140px)] w-[85vw] sm:w-80 md:w-84 shrink-0 flex-col rounded-2xl border border-border/70 bg-muted/55 dark:bg-muted/30 shadow-2xs backdrop-blur-sm transition-shadow">
       {/* Sticky Column Header */}
-      <div className="sticky top-0 z-10 shrink-0 bg-card/90 dark:bg-card/90 backdrop-blur-md rounded-t-2xl border-b border-border/40 flex items-center justify-between gap-1.5 p-3 pb-2.5 select-none">
+      <div className="sticky top-0 z-10 shrink-0 bg-card/90 dark:bg-card/90 backdrop-blur-md rounded-t-2xl flex items-center justify-between gap-1.5 p-3 pb-2 select-none">
         <div className="flex flex-1 items-center min-w-0">
           {isEditingTitle ? (
             <input
@@ -151,6 +153,7 @@ export const ListColumn = memo(function ListColumn({
             card={card}
             labels={cardLabelsMap[card._id]}
             assignees={cardAssigneesMap[card._id]}
+            commentsCount={cardCommentsCountMap[card._id]}
             onRenameCard={onRenameCard}
             onArchiveCard={onArchiveCard}
             onCardClick={onCardClick}
@@ -165,7 +168,7 @@ export const ListColumn = memo(function ListColumn({
       </div>
 
       {/* Sticky Column Footer: Quick Composer */}
-      <div className="sticky bottom-0 z-10 shrink-0 bg-card/90 dark:bg-card/90 backdrop-blur-md rounded-b-2xl border-t border-border/40 p-2.5">
+      <div className="sticky bottom-0 z-10 shrink-0 bg-card/90 dark:bg-card/90 backdrop-blur-md rounded-b-2xl p-2.5">
         <ListComposer
           isOpen={isComposerOpen}
           onOpen={() => setIsComposerOpen(true)}

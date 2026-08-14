@@ -12,7 +12,15 @@ import {
 } from '#/components/ui/drawer.tsx'
 import { useIsMobile } from '#/hooks/use-mobile.ts'
 import { CardDetailModalContent } from './card-detail-modal-content.tsx'
-import type { BoardMemberUser, CardDoc, ListDoc, LabelDoc } from '../types.ts'
+import type {
+  BoardMemberUser,
+  CardDoc,
+  CommentDoc,
+  EnrichedActivityDoc,
+  EnrichedComment,
+  ListDoc,
+  LabelDoc,
+} from '../types.ts'
 
 export interface CardDetailModalProps {
   card: CardDoc | null
@@ -21,6 +29,10 @@ export interface CardDetailModalProps {
   cardLabels?: LabelDoc[]
   boardMembers?: BoardMemberUser[]
   cardAssignees?: BoardMemberUser[]
+  comments?: EnrichedComment[]
+  activities?: EnrichedActivityDoc[]
+  currentUserId?: string
+  currentUserProfile?: BoardMemberUser | null
   isOpen: boolean
   onClose: () => void
   onSaveTitle: (cardId: CardDoc['_id'], title: string) => void
@@ -30,6 +42,12 @@ export interface CardDetailModalProps {
   onArchive: (cardId: CardDoc['_id']) => void
   onToggleLabel?: (cardId: CardDoc['_id'], label: LabelDoc) => void
   onToggleAssignee?: (cardId: CardDoc['_id'], userId: string) => void
+  onAddComment?: (cardId: CardDoc['_id'], body: string) => Promise<void> | void
+  onUpdateComment?: (
+    commentId: CommentDoc['_id'],
+    body: string,
+  ) => Promise<void> | void
+  onDeleteComment?: (commentId: CommentDoc['_id']) => Promise<void> | void
 }
 
 export function CardDetailModal({
@@ -39,6 +57,10 @@ export function CardDetailModal({
   cardLabels = [],
   boardMembers = [],
   cardAssignees = [],
+  comments = [],
+  activities = [],
+  currentUserId,
+  currentUserProfile,
   isOpen,
   onClose,
   onSaveTitle,
@@ -48,6 +70,9 @@ export function CardDetailModal({
   onArchive,
   onToggleLabel,
   onToggleAssignee,
+  onAddComment,
+  onUpdateComment,
+  onDeleteComment,
 }: CardDetailModalProps) {
   const isMobile = useIsMobile()
 
@@ -61,6 +86,10 @@ export function CardDetailModal({
       cardLabels={cardLabels}
       boardMembers={boardMembers}
       cardAssignees={cardAssignees}
+      comments={comments}
+      activities={activities}
+      currentUserId={currentUserId}
+      currentUserProfile={currentUserProfile}
       onSaveTitle={(title) => onSaveTitle(card._id, title)}
       onSaveDescription={(desc) => onSaveDescription(card._id, desc)}
       onUpdateDueDate={(dueDate) => onUpdateDueDate(card._id, dueDate)}
@@ -69,6 +98,9 @@ export function CardDetailModal({
       onClose={onClose}
       onToggleLabel={(label) => onToggleLabel?.(card._id, label)}
       onToggleAssignee={(userId) => onToggleAssignee?.(card._id, userId)}
+      onAddComment={(body) => onAddComment?.(card._id, body)}
+      onUpdateComment={(commentId, body) => onUpdateComment?.(commentId, body)}
+      onDeleteComment={(commentId) => onDeleteComment?.(commentId)}
     />
   )
 

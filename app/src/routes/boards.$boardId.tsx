@@ -22,6 +22,7 @@ import { BoardMenuSheet } from '#/components/board/board-menu-sheet.tsx'
 import { BoardSkeleton } from '#/components/board/board-skeleton.tsx'
 import type {
   BoardMemberUser,
+  CommentDoc,
   ListDoc,
   CardDoc,
   LabelDoc,
@@ -37,7 +38,7 @@ function BoardPage() {
 
   const { isLoaded, isSignedIn } = useAuth()
 
-  // Live subscriptions to board, lists, active cards, archived cards, activity log, labels, members, and assignees
+  // Live subscriptions to board, lists, active cards, archived cards, activity log, labels, members, assignees, and comments
   const board = useQuery(api.boards.get, { boardId: typedBoardId })
   const lists = useQuery(api.lists.list, { boardId: typedBoardId })
   const cards = useQuery(api.cards.listByBoard, { boardId: typedBoardId })
@@ -57,6 +58,22 @@ function BoardPage() {
   const cardAssigneesList = useQuery(api.assignees.listCardAssigneesForBoard, {
     boardId: typedBoardId,
   })
+  const cardCommentsCountList = useQuery(
+    api.comments.listCommentsCountForBoard,
+    { boardId: typedBoardId },
+  )
+  const currentUser = useQuery(api.users.currentUser)
+
+  // Local UI State
+  const [isActivityMenuOpen, setIsActivityMenuOpen] = useState(false)
+  const [listBeingDeleted, setListBeingDeleted] = useState<ListDoc | null>(null)
+  const [activeCardId, setActiveCardId] = useState<Id<'cards'> | null>(null)
+
+  // Subscribed comments for active modal card
+  const activeCardComments = useQuery(
+    api.comments.listByCard,
+    activeCardId ? { cardId: activeCardId } : 'skip',
+  )
 
   // List Mutations
   const createListMutation = useMutation(api.lists.create)
@@ -82,10 +99,10 @@ function BoardPage() {
   // Assignee Mutation
   const toggleCardAssigneeMutation = useMutation(api.assignees.toggleOnCard)
 
-  // Local UI State
-  const [isActivityMenuOpen, setIsActivityMenuOpen] = useState(false)
-  const [listBeingDeleted, setListBeingDeleted] = useState<ListDoc | null>(null)
-  const [activeCardId, setActiveCardId] = useState<Id<'cards'> | null>(null)
+  // Comment Mutations
+  const addCommentMutation = useMutation(api.comments.add)
+  const updateCommentMutation = useMutation(api.comments.update)
+  const deleteCommentMutation = useMutation(api.comments.remove)
 
   if (
     !isLoaded ||
@@ -159,6 +176,12 @@ function BoardPage() {
     } else {
       cardAssigneesMap[item.cardId] = [item.user]
     }
+  }
+
+  // Group card comment counts by cardId
+  const cardCommentsCountMap: Record<string, number | undefined> = {}
+  for (const item of cardCommentsCountList ?? []) {
+    cardCommentsCountMap[item.cardId] = item.count
   }
 
   const handleAddList = async (title: string) => {
@@ -295,6 +318,29 @@ function BoardPage() {
     })
   }
 
+  const handleAddComment = async (cardId: CardDoc['_id'], body: string) => {
+    await addCommentMutation({
+      cardId,
+      body,
+    })
+  }
+
+  const handleUpdateComment = async (
+    commentId: CommentDoc['_id'],
+    body: string,
+  ) => {
+    await updateCommentMutation({
+      commentId,
+      body,
+    })
+  }
+
+  const handleDeleteComment = async (commentId: CommentDoc['_id']) => {
+    await deleteCommentMutation({
+      commentId,
+    })
+  }
+
   const deletedListCardCount = listBeingDeleted
     ? cards.filter((c) => c.listId === listBeingDeleted._id).length
     : 0
@@ -307,13 +353,23 @@ function BoardPage() {
     ? (cardAssigneesMap[activeCardId] ?? [])
     : []
 
+  const currentUserProfile: BoardMemberUser | null = currentUser
+    ? {
+        userId: currentUser.tokenIdentifier,
+        name: currentUser.name ?? 'You',
+        email: currentUser.email,
+        imageUrl: currentUser.imageUrl,
+        isOwner: currentUser.tokenIdentifier === board.ownerId,
+      }
+    : null
+
   return (
     <div className="flex h-screen flex-col bg-app-background font-sans overflow-hidden">
       {/* Top Persistent Board Header */}
       <header className="shrink-0 border-b border-border/60 bg-card/85 shadow-2xs backdrop-blur-md sticky top-0 z-30">
         <BoardHeader
           board={board}
-          onOpenActivityMenu={() => setIsActivityMenuOpen(true)}
+          onOpenBoardMenu={() => setIsActivityMenuOpen(true)}
         />
       </header>
 
@@ -323,6 +379,7 @@ function BoardPage() {
         cards={cards}
         cardLabelsMap={cardLabelsMap}
         cardAssigneesMap={cardAssigneesMap}
+        cardCommentsCountMap={cardCommentsCountMap}
         onAddList={handleAddList}
         onRenameList={handleRenameList}
         onDeleteList={(list) => setListBeingDeleted(list)}
@@ -341,6 +398,10 @@ function BoardPage() {
         cardLabels={activeCardLabels}
         boardMembers={boardMembers ?? []}
         cardAssignees={activeCardAssignees}
+        comments={activeCardComments ?? []}
+        activities={activities ?? []}
+        currentUserId={currentUser?.tokenIdentifier}
+        currentUserProfile={currentUserProfile}
         isOpen={Boolean(activeCard)}
         onClose={() => setActiveCardId(null)}
         onSaveTitle={handleRenameCard}
@@ -350,6 +411,9 @@ function BoardPage() {
         onArchive={handleArchiveCard}
         onToggleLabel={handleToggleCardLabel}
         onToggleAssignee={handleToggleCardAssignee}
+        onAddComment={handleAddComment}
+        onUpdateComment={handleUpdateComment}
+        onDeleteComment={handleDeleteComment}
       />
 
       {/* Delete List Confirmation Dialog */}

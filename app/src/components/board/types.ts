@@ -29,6 +29,22 @@ export interface EnrichedCardLabel {
   label: LabelDoc
 }
 
+export type CommentDoc = Doc<'comments'>
+
+export interface EnrichedComment {
+  _id: CommentDoc['_id']
+  _creationTime: number
+  cardId: CardDoc['_id']
+  authorId: string
+  body: string
+  author: BoardMemberUser
+}
+
+export interface CardCommentCount {
+  cardId: CardDoc['_id']
+  count: number
+}
+
 export interface EnrichedActivityDoc extends Doc<'activity'> {
   actor?: {
     tokenIdentifier: string

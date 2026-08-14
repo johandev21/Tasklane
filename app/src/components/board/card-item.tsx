@@ -1,5 +1,12 @@
 import { useState } from 'react'
-import { Edit2, Archive, Clock, Flame, AlignLeft } from 'lucide-react'
+import {
+  Edit2,
+  Archive,
+  Clock,
+  Flame,
+  AlignLeft,
+  MessageSquare,
+} from 'lucide-react'
 import { Button } from '#/components/ui/button.tsx'
 import { Avatar, AvatarFallback, AvatarImage } from '#/components/ui/avatar.tsx'
 import { getLabelColor } from './labels/label-colors.ts'
@@ -16,6 +23,7 @@ export interface CardItemProps {
   card: CardDoc
   labels?: LabelDoc[]
   assignees?: BoardMemberUser[]
+  commentsCount?: number
   onRenameCard: (cardId: CardDoc['_id'], newTitle: string) => void
   onArchiveCard: (cardId: CardDoc['_id']) => void
   onCardClick?: (card: CardDoc) => void
@@ -25,6 +33,7 @@ export function CardItem({
   card,
   labels = [],
   assignees = [],
+  commentsCount = 0,
   onRenameCard,
   onArchiveCard,
   onCardClick,
@@ -61,12 +70,9 @@ export function CardItem({
             return (
               <span
                 key={lbl._id}
-                className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] font-semibold border ${colorDef.badgeClass} max-w-full`}
+                className={`inline-flex items-center rounded-md px-1.5 py-0.5 text-[11px] font-semibold border ${colorDef.badgeClass} max-w-full`}
                 title={lbl.name}
               >
-                <span
-                  className={`size-1.5 rounded-full ${colorDef.dotClass} shrink-0`}
-                />
                 <span className="truncate break-all">{lbl.name}</span>
               </span>
             )
@@ -122,7 +128,10 @@ export function CardItem({
 
       {/* Badges / Metadata Indicators */}
       {!isEditing &&
-        (card.dueDate || card.description || assignees.length > 0) && (
+        (card.dueDate ||
+          card.description ||
+          commentsCount > 0 ||
+          assignees.length > 0) && (
           <div className="flex items-center justify-between gap-2 flex-wrap pt-0.5 select-none">
             <div className="flex items-center gap-2 flex-wrap">
               {card.dueDate && (
@@ -153,6 +162,16 @@ export function CardItem({
                   title="This card has a description"
                 >
                   <AlignLeft className="size-3.5" />
+                </span>
+              )}
+
+              {commentsCount > 0 && (
+                <span
+                  className="inline-flex items-center gap-1 text-xs text-muted-foreground/70"
+                  title={`${commentsCount} comment${commentsCount === 1 ? '' : 's'}`}
+                >
+                  <MessageSquare className="size-3.5" />
+                  <span className="font-mono text-[11px]">{commentsCount}</span>
                 </span>
               )}
             </div>

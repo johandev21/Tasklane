@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router'
-import { Activity, KanbanSquare } from 'lucide-react'
+import { Menu, KanbanSquare } from 'lucide-react'
 import { UserButton } from '@clerk/tanstack-react-start'
 import { Button } from '#/components/ui/button.tsx'
 import {
@@ -15,10 +15,17 @@ import type { BoardDoc } from './types.ts'
 
 export interface BoardHeaderProps {
   board: BoardDoc
-  onOpenActivityMenu: () => void
+  onOpenBoardMenu?: () => void
+  onOpenActivityMenu?: () => void
 }
 
-export function BoardHeader({ board, onOpenActivityMenu }: BoardHeaderProps) {
+export function BoardHeader({
+  board,
+  onOpenBoardMenu,
+  onOpenActivityMenu,
+}: BoardHeaderProps) {
+  const handleOpen = onOpenBoardMenu || onOpenActivityMenu
+
   return (
     <div className="flex h-14 items-center justify-between gap-3 px-4 sm:px-6">
       {/* Left: Home Navigation + Breadcrumbs + Board Title */}
@@ -51,17 +58,17 @@ export function BoardHeader({ board, onOpenActivityMenu }: BoardHeaderProps) {
         </Breadcrumb>
       </div>
 
-      {/* Right: Activity Log Entry Point + Theme Toggle + User Menu */}
+      {/* Right: Board Menu Entry Point + Theme Toggle + User Menu */}
       <div className="flex items-center gap-2 sm:gap-3 shrink-0">
         <Button
           variant="outline"
           size="sm"
-          onClick={onOpenActivityMenu}
-          className="text-xs h-8 gap-1.5"
-          title="Open activity log"
+          onClick={handleOpen}
+          className="text-xs h-8 gap-1.5 cursor-pointer"
+          title="Open board menu"
         >
-          <Activity className="size-3.5 text-primary" />
-          <span className="hidden sm:inline">Activity</span>
+          <Menu className="size-3.5" />
+          <span className="hidden sm:inline">Board menu</span>
         </Button>
 
         <div className="h-4 w-px bg-border/60 hidden sm:block" />

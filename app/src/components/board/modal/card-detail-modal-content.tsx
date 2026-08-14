@@ -4,8 +4,17 @@ import { CardModalAssignees } from './sections/card-modal-assignees.tsx'
 import { CardModalLabels } from './sections/card-modal-labels.tsx'
 import { CardModalDueDate } from './sections/card-modal-due-date.tsx'
 import { CardModalDescription } from './sections/card-modal-description.tsx'
+import { CardModalComments } from './sections/card-modal-comments.tsx'
 import { CardModalAddPopover } from './sections/card-modal-add-popover.tsx'
-import type { BoardMemberUser, CardDoc, ListDoc, LabelDoc } from '../types.ts'
+import type {
+  BoardMemberUser,
+  CardDoc,
+  CommentDoc,
+  EnrichedActivityDoc,
+  EnrichedComment,
+  ListDoc,
+  LabelDoc,
+} from '../types.ts'
 
 export interface CardDetailModalContentProps {
   card: CardDoc
@@ -14,6 +23,10 @@ export interface CardDetailModalContentProps {
   cardLabels?: LabelDoc[]
   boardMembers?: BoardMemberUser[]
   cardAssignees?: BoardMemberUser[]
+  comments?: EnrichedComment[]
+  activities?: EnrichedActivityDoc[]
+  currentUserId?: string
+  currentUserProfile?: BoardMemberUser | null
   onSaveTitle: (title: string) => void
   onSaveDescription: (description: string) => void
   onUpdateDueDate: (dueDate: number | undefined) => void
@@ -22,6 +35,12 @@ export interface CardDetailModalContentProps {
   onClose: () => void
   onToggleLabel?: (label: LabelDoc) => void
   onToggleAssignee?: (userId: string) => void
+  onAddComment?: (body: string) => Promise<void> | void
+  onUpdateComment?: (
+    commentId: CommentDoc['_id'],
+    body: string,
+  ) => Promise<void> | void
+  onDeleteComment?: (commentId: CommentDoc['_id']) => Promise<void> | void
 }
 
 export function CardDetailModalContent({
@@ -31,6 +50,10 @@ export function CardDetailModalContent({
   cardLabels = [],
   boardMembers = [],
   cardAssignees = [],
+  comments = [],
+  activities = [],
+  currentUserId,
+  currentUserProfile,
   onSaveTitle,
   onSaveDescription,
   onUpdateDueDate,
@@ -39,6 +62,9 @@ export function CardDetailModalContent({
   onClose,
   onToggleLabel,
   onToggleAssignee,
+  onAddComment,
+  onUpdateComment,
+  onDeleteComment,
 }: CardDetailModalContentProps) {
   const currentList = lists.find((l) => l._id === card.listId)
 
@@ -71,7 +97,7 @@ export function CardDetailModalContent({
         </div>
 
         {/* Assignees Section */}
-        <div className="pt-1">
+        <div>
           <CardModalAssignees
             boardMembers={boardMembers}
             cardAssignees={cardAssignees}
@@ -80,7 +106,7 @@ export function CardDetailModalContent({
         </div>
 
         {/* Labels Section */}
-        <div className="pt-2 border-t border-border/40">
+        <div>
           <CardModalLabels
             boardLabels={boardLabels}
             cardLabels={cardLabels}
@@ -89,7 +115,7 @@ export function CardDetailModalContent({
         </div>
 
         {/* Due Date Section */}
-        <div className="pt-2 border-t border-border/40">
+        <div>
           <CardModalDueDate
             dueDate={card.dueDate}
             onUpdateDueDate={onUpdateDueDate}
@@ -97,10 +123,27 @@ export function CardDetailModalContent({
         </div>
 
         {/* Description Section */}
-        <div className="pt-2 border-t border-border/40">
+        <div>
           <CardModalDescription
             description={card.description || ''}
             onSaveDescription={onSaveDescription}
+          />
+        </div>
+
+        {/* Comments & Activity Feed Section */}
+        <div className="pt-2 border-t border-border/40">
+          <CardModalComments
+            cardId={card._id}
+            cardTitle={card.title}
+            comments={comments}
+            activities={activities}
+            currentUserId={currentUserId}
+            currentUserProfile={currentUserProfile}
+            onAddComment={(body) => onAddComment?.(body)}
+            onUpdateComment={(commentId, body) =>
+              onUpdateComment?.(commentId, body)
+            }
+            onDeleteComment={(commentId) => onDeleteComment?.(commentId)}
           />
         </div>
       </div>
