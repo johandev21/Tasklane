@@ -113,7 +113,7 @@ pnpm install
 2. En una terminal, inicie el entorno de desarrollo de Convex:
 
 ```bash
-pnpm dlx convex dev
+pnpm convex:dev
 ```
 
 3. En una segunda terminal, inicie el servidor de desarrollo local:
@@ -131,6 +131,7 @@ Todos los comandos deben ejecutarse desde la carpeta `app/`:
 | Comando | Descripción |
 |---|---|
 | `pnpm dev` | Inicia el servidor de desarrollo local en el puerto 3000. |
+| `pnpm convex:dev` | Inicia el backend de Convex y sincroniza esquemas y funciones en tiempo real. |
 | `pnpm build` | Compila la aplicación para producción. |
 | `pnpm preview` | Previsualiza el bundle de producción localmente. |
 | `pnpm test` | Ejecuta la suite de pruebas unitarias en memoria con Vitest. |

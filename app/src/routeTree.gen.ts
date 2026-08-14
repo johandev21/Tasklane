@@ -11,6 +11,8 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as HomeRouteImport } from './routes/home'
+import { Route as BoardsBoardIdRouteImport } from './routes/boards.$boardId'
+import { Route as PrototypeBoardRouteImport } from './routes/prototype.board'
 import { Route as SignInSplatRouteImport } from './routes/sign-in.$'
 import { Route as SignUpSplatRouteImport } from './routes/sign-up.$'
 
@@ -22,6 +24,16 @@ const IndexRoute = IndexRouteImport.update({
 const HomeRoute = HomeRouteImport.update({
   id: '/home',
   path: '/home',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BoardsBoardIdRoute = BoardsBoardIdRouteImport.update({
+  id: '/boards/$boardId',
+  path: '/boards/$boardId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrototypeBoardRoute = PrototypeBoardRouteImport.update({
+  id: '/prototype/board',
+  path: '/prototype/board',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SignInSplatRoute = SignInSplatRouteImport.update({
@@ -38,12 +50,16 @@ const SignUpSplatRoute = SignUpSplatRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/home': typeof HomeRoute
+  '/boards/$boardId': typeof BoardsBoardIdRoute
+  '/prototype/board': typeof PrototypeBoardRoute
   '/sign-in/$': typeof SignInSplatRoute
   '/sign-up/$': typeof SignUpSplatRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/home': typeof HomeRoute
+  '/boards/$boardId': typeof BoardsBoardIdRoute
+  '/prototype/board': typeof PrototypeBoardRoute
   '/sign-in/$': typeof SignInSplatRoute
   '/sign-up/$': typeof SignUpSplatRoute
 }
@@ -51,20 +67,43 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/home': typeof HomeRoute
+  '/boards/$boardId': typeof BoardsBoardIdRoute
+  '/prototype/board': typeof PrototypeBoardRoute
   '/sign-in/$': typeof SignInSplatRoute
   '/sign-up/$': typeof SignUpSplatRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/home' | '/sign-in/$' | '/sign-up/$'
+  fullPaths:
+    | '/'
+    | '/home'
+    | '/boards/$boardId'
+    | '/prototype/board'
+    | '/sign-in/$'
+    | '/sign-up/$'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/home' | '/sign-in/$' | '/sign-up/$'
-  id: '__root__' | '/' | '/home' | '/sign-in/$' | '/sign-up/$'
+  to:
+    | '/'
+    | '/home'
+    | '/boards/$boardId'
+    | '/prototype/board'
+    | '/sign-in/$'
+    | '/sign-up/$'
+  id:
+    | '__root__'
+    | '/'
+    | '/home'
+    | '/boards/$boardId'
+    | '/prototype/board'
+    | '/sign-in/$'
+    | '/sign-up/$'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   HomeRoute: typeof HomeRoute
+  BoardsBoardIdRoute: typeof BoardsBoardIdRoute
+  PrototypeBoardRoute: typeof PrototypeBoardRoute
   SignInSplatRoute: typeof SignInSplatRoute
   SignUpSplatRoute: typeof SignUpSplatRoute
 }
@@ -83,6 +122,20 @@ declare module '@tanstack/react-router' {
       path: '/home'
       fullPath: '/home'
       preLoaderRoute: typeof HomeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/boards/$boardId': {
+      id: '/boards/$boardId'
+      path: '/boards/$boardId'
+      fullPath: '/boards/$boardId'
+      preLoaderRoute: typeof BoardsBoardIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/prototype/board': {
+      id: '/prototype/board'
+      path: '/prototype/board'
+      fullPath: '/prototype/board'
+      preLoaderRoute: typeof PrototypeBoardRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/sign-in/$': {
@@ -105,6 +158,8 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   HomeRoute: HomeRoute,
+  BoardsBoardIdRoute: BoardsBoardIdRoute,
+  PrototypeBoardRoute: PrototypeBoardRoute,
   SignInSplatRoute: SignInSplatRoute,
   SignUpSplatRoute: SignUpSplatRoute,
 }

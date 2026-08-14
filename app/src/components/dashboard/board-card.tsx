@@ -1,3 +1,4 @@
+import { Link } from '@tanstack/react-router'
 import { Badge } from '#/components/ui/badge.tsx'
 import { Button } from '#/components/ui/button.tsx'
 import {
@@ -48,7 +49,15 @@ export function BoardCard({ board }: BoardCardProps) {
           </span>
         </div>
 
-        <CardTitle className="line-clamp-2 text-base">{board.name}</CardTitle>
+        <CardTitle className="line-clamp-2 text-base">
+          <Link
+            to="/boards/$boardId"
+            params={{ boardId: board._id }}
+            className="hover:underline"
+          >
+            {board.name}
+          </Link>
+        </CardTitle>
       </CardHeader>
 
       <CardContent className="flex flex-col gap-3 py-2">
@@ -87,8 +96,10 @@ export function BoardCard({ board }: BoardCardProps) {
         <span className="text-xs text-muted-foreground">
           {board.memberCount} {board.memberCount === 1 ? 'member' : 'members'}
         </span>
-        <Button variant="ghost" size="xs">
-          Open board
+        <Button variant="ghost" size="xs" asChild>
+          <Link to="/boards/$boardId" params={{ boardId: board._id }}>
+            Open board
+          </Link>
         </Button>
       </CardFooter>
     </Card>

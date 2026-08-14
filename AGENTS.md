@@ -12,6 +12,7 @@ A project-management platform for organizing work through boards, lists, and car
 Run all commands from `app/`. Use `pnpm` (and `pnpm dlx`) for tooling, not npm/npx.
 
 - `pnpm dev` — dev server on port 3000
+- `pnpm convex:dev` — run Convex backend development sync & watcher
 - `pnpm generate-routes` — regenerate the TanStack route tree
 - `pnpm build` — production build
 - `pnpm preview` — preview the production build
@@ -42,4 +43,9 @@ Single-context — one root `CONTEXT.md` plus `docs/adr/`. See `docs/agents/doma
 
 ## Verify your work
 
-Before declaring a task done that touched `app/`: run `pnpm typecheck`, `pnpm lint`, and `pnpm check` from `app/`.
+Always typecheck first before linting and formatting. Ensure the app has zero TypeScript errors via `pnpm typecheck` before running `pnpm lint`, `pnpm check`, or `pnpm format`.
+
+Before declaring a task done that touched `app/`: run in this exact order from `app/`:
+1. `pnpm typecheck` — must pass with 0 TypeScript errors before proceeding.
+2. `pnpm lint` — verify ESLint rules.
+3. `pnpm check` — verify Prettier formatting (or `pnpm format` to auto-fix).

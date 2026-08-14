@@ -23,6 +23,7 @@ export const ACTIVITY_TYPES = [
   'board_created',
   'list_created',
   'list_renamed',
+  'list_deleted',
   'card_created',
   'card_moved',
   'card_archived',

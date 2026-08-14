@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link, createFileRoute } from '@tanstack/react-router'
+import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
 import { UserButton, useAuth, useUser } from '@clerk/tanstack-react-start'
 import { useMutation, useQuery } from 'convex/react'
 import { api } from '../../convex/_generated/api'
@@ -31,6 +31,7 @@ export const Route = createFileRoute('/home')({
 })
 
 function HomePage() {
+  const navigate = useNavigate()
   const { isLoaded, isSignedIn } = useAuth()
   const { user } = useUser()
   const upsertUser = useMutation(api.users.upsertUser)
@@ -56,7 +57,8 @@ function HomePage() {
   }, [isLoaded, user, upsertUser])
 
   const handleCreateBoard = async (name: string) => {
-    await createBoardMutation({ name })
+    const boardId = await createBoardMutation({ name })
+    navigate({ to: '/boards/$boardId', params: { boardId } })
   }
 
   if (isLoaded && !isSignedIn) {
