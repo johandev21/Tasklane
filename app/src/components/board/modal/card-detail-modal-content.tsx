@@ -1,16 +1,19 @@
 import { CardModalTopBar } from './sections/card-modal-top-bar.tsx'
 import { CardModalTitle } from './sections/card-modal-title.tsx'
+import { CardModalAssignees } from './sections/card-modal-assignees.tsx'
 import { CardModalLabels } from './sections/card-modal-labels.tsx'
 import { CardModalDueDate } from './sections/card-modal-due-date.tsx'
 import { CardModalDescription } from './sections/card-modal-description.tsx'
-import type { CardDoc, ListDoc, LabelDoc } from '../types.ts'
+import { CardModalAddPopover } from './sections/card-modal-add-popover.tsx'
+import type { BoardMemberUser, CardDoc, ListDoc, LabelDoc } from '../types.ts'
 
 export interface CardDetailModalContentProps {
   card: CardDoc
   lists: ListDoc[]
   boardLabels?: LabelDoc[]
   cardLabels?: LabelDoc[]
-  isOwner?: boolean
+  boardMembers?: BoardMemberUser[]
+  cardAssignees?: BoardMemberUser[]
   onSaveTitle: (title: string) => void
   onSaveDescription: (description: string) => void
   onUpdateDueDate: (dueDate: number | undefined) => void
@@ -18,13 +21,7 @@ export interface CardDetailModalContentProps {
   onArchive: () => void
   onClose: () => void
   onToggleLabel?: (label: LabelDoc) => void
-  onCreateLabel?: (name: string, color: string) => Promise<void> | void
-  onUpdateLabel?: (
-    labelId: LabelDoc['_id'],
-    name?: string,
-    color?: string,
-  ) => Promise<void> | void
-  onRemoveLabel?: (labelId: LabelDoc['_id']) => Promise<void> | void
+  onToggleAssignee?: (userId: string) => void
 }
 
 export function CardDetailModalContent({
@@ -32,7 +29,8 @@ export function CardDetailModalContent({
   lists,
   boardLabels = [],
   cardLabels = [],
-  isOwner = false,
+  boardMembers = [],
+  cardAssignees = [],
   onSaveTitle,
   onSaveDescription,
   onUpdateDueDate,
@@ -40,9 +38,7 @@ export function CardDetailModalContent({
   onArchive,
   onClose,
   onToggleLabel,
-  onCreateLabel,
-  onUpdateLabel,
-  onRemoveLabel,
+  onToggleAssignee,
 }: CardDetailModalContentProps) {
   const currentList = lists.find((l) => l._id === card.listId)
 
@@ -59,19 +55,36 @@ export function CardDetailModalContent({
 
       {/* 2. Main Content Area */}
       <div className="flex-1 min-h-0 overflow-y-auto p-5 sm:p-6 flex flex-col gap-6 select-text">
-        {/* Card Title Editor */}
-        <CardModalTitle title={card.title} onSaveTitle={onSaveTitle} />
+        {/* Card Title Editor with Quick Add Popover */}
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex-1 min-w-0">
+            <CardModalTitle title={card.title} onSaveTitle={onSaveTitle} />
+          </div>
+          <CardModalAddPopover
+            boardLabels={boardLabels}
+            cardLabels={cardLabels}
+            boardMembers={boardMembers}
+            cardAssignees={cardAssignees}
+            onToggleLabel={(label) => onToggleLabel?.(label)}
+            onToggleAssignee={onToggleAssignee}
+          />
+        </div>
+
+        {/* Assignees Section */}
+        <div className="pt-1">
+          <CardModalAssignees
+            boardMembers={boardMembers}
+            cardAssignees={cardAssignees}
+            onToggleAssignee={onToggleAssignee}
+          />
+        </div>
 
         {/* Labels Section */}
-        <div className="pt-1">
+        <div className="pt-2 border-t border-border/40">
           <CardModalLabels
             boardLabels={boardLabels}
             cardLabels={cardLabels}
-            isOwner={isOwner}
             onToggleLabel={(label) => onToggleLabel?.(label)}
-            onCreateLabel={onCreateLabel}
-            onUpdateLabel={onUpdateLabel}
-            onRemoveLabel={onRemoveLabel}
           />
         </div>
 

@@ -6,31 +6,18 @@ import {
 } from '#/components/ui/popover.tsx'
 import { Button } from '#/components/ui/button.tsx'
 import { getLabelColor } from '../../labels/label-colors.ts'
-import { LabelPaletteManager } from '../../labels/label-palette-manager.tsx'
 import type { LabelDoc } from '../../types.ts'
 
 export interface CardModalLabelsProps {
   boardLabels: LabelDoc[]
   cardLabels: LabelDoc[]
-  isOwner: boolean
   onToggleLabel: (label: LabelDoc) => void
-  onCreateLabel?: (name: string, color: string) => Promise<void> | void
-  onUpdateLabel?: (
-    labelId: LabelDoc['_id'],
-    name?: string,
-    color?: string,
-  ) => Promise<void> | void
-  onRemoveLabel?: (labelId: LabelDoc['_id']) => Promise<void> | void
 }
 
 export function CardModalLabels({
   boardLabels,
   cardLabels,
-  isOwner,
   onToggleLabel,
-  onCreateLabel,
-  onUpdateLabel,
-  onRemoveLabel,
 }: CardModalLabelsProps) {
   return (
     <div className="flex flex-col gap-2">
@@ -68,13 +55,13 @@ export function CardModalLabels({
           )
         })}
 
-        {/* Add / Manage Labels Popover Trigger */}
+        {/* Add / Toggle Labels Popover Trigger */}
         <Popover>
           <PopoverTrigger asChild>
             <Button
               variant="outline"
               size="sm"
-              className="gap-1.5 rounded-lg border-dashed border-border/80 text-muted-foreground hover:text-foreground text-xs h-7 px-2.5"
+              className="gap-1.5 rounded-lg border-dashed border-border/80 text-muted-foreground hover:text-foreground text-xs h-7 px-2.5 cursor-pointer"
             >
               <Plus className="size-3.5" />
               <span>{cardLabels.length === 0 ? 'Add labels' : 'Edit'}</span>
@@ -123,19 +110,6 @@ export function CardModalLabels({
                 </p>
               )}
             </div>
-
-            {/* Palette Manager Drawer/Section inside popover for Owner */}
-            {isOwner && (
-              <div className="pt-2 border-t border-border/40">
-                <LabelPaletteManager
-                  labels={boardLabels}
-                  isOwner={isOwner}
-                  onCreateLabel={onCreateLabel}
-                  onUpdateLabel={onUpdateLabel}
-                  onRemoveLabel={onRemoveLabel}
-                />
-              </div>
-            )}
           </PopoverContent>
         </Popover>
       </div>

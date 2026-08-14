@@ -82,6 +82,10 @@ function formatActivityMessage(act: EnrichedActivityDoc): string {
       return `added label "${payload.labelName ?? 'Label'}" to "${payload.title ?? 'card'}"`
     case 'label_removed':
       return `removed label "${payload.labelName ?? 'Label'}" from "${payload.title ?? 'card'}"`
+    case 'assignee_added':
+      return `assigned ${payload.memberName ?? 'a member'} to "${payload.title ?? 'card'}"`
+    case 'assignee_removed':
+      return `unassigned ${payload.memberName ?? 'a member'} from "${payload.title ?? 'card'}"`
     case 'card_moved':
       return `moved card "${payload.title ?? ''}"`
     default:

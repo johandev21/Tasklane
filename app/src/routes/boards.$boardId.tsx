@@ -20,7 +20,12 @@ import { BoardCanvas } from '#/components/board/board-canvas.tsx'
 import { DeleteListDialog } from '#/components/board/delete-list-dialog.tsx'
 import { BoardMenuSheet } from '#/components/board/board-menu-sheet.tsx'
 import { BoardSkeleton } from '#/components/board/board-skeleton.tsx'
-import type { ListDoc, CardDoc, LabelDoc } from '#/components/board/types.ts'
+import type {
+  BoardMemberUser,
+  ListDoc,
+  CardDoc,
+  LabelDoc,
+} from '#/components/board/types.ts'
 
 export const Route = createFileRoute('/boards/$boardId')({
   component: BoardPage,
@@ -32,7 +37,7 @@ function BoardPage() {
 
   const { isLoaded, isSignedIn } = useAuth()
 
-  // Live subscriptions to board, lists, active cards, archived cards, activity log, and labels
+  // Live subscriptions to board, lists, active cards, archived cards, activity log, labels, members, and assignees
   const board = useQuery(api.boards.get, { boardId: typedBoardId })
   const lists = useQuery(api.lists.list, { boardId: typedBoardId })
   const cards = useQuery(api.cards.listByBoard, { boardId: typedBoardId })
@@ -44,6 +49,12 @@ function BoardPage() {
     boardId: typedBoardId,
   })
   const cardLabelsList = useQuery(api.labels.listCardLabelsForBoard, {
+    boardId: typedBoardId,
+  })
+  const boardMembers = useQuery(api.members.listByBoard, {
+    boardId: typedBoardId,
+  })
+  const cardAssigneesList = useQuery(api.assignees.listCardAssigneesForBoard, {
     boardId: typedBoardId,
   })
 
@@ -67,6 +78,9 @@ function BoardPage() {
   const updateLabelMutation = useMutation(api.labels.update)
   const removeLabelMutation = useMutation(api.labels.remove)
   const toggleCardLabelMutation = useMutation(api.labels.toggleOnCard)
+
+  // Assignee Mutation
+  const toggleCardAssigneeMutation = useMutation(api.assignees.toggleOnCard)
 
   // Local UI State
   const [isActivityMenuOpen, setIsActivityMenuOpen] = useState(false)
@@ -133,6 +147,17 @@ function BoardPage() {
       existing.push(item.label)
     } else {
       cardLabelsMap[item.cardId] = [item.label]
+    }
+  }
+
+  // Group card assignees by cardId
+  const cardAssigneesMap: Record<string, BoardMemberUser[] | undefined> = {}
+  for (const item of cardAssigneesList ?? []) {
+    const existing = cardAssigneesMap[item.cardId]
+    if (existing) {
+      existing.push(item.user)
+    } else {
+      cardAssigneesMap[item.cardId] = [item.user]
     }
   }
 
@@ -260,6 +285,16 @@ function BoardPage() {
     })
   }
 
+  const handleToggleCardAssignee = async (
+    cardId: CardDoc['_id'],
+    userId: string,
+  ) => {
+    await toggleCardAssigneeMutation({
+      cardId,
+      userId,
+    })
+  }
+
   const deletedListCardCount = listBeingDeleted
     ? cards.filter((c) => c.listId === listBeingDeleted._id).length
     : 0
@@ -267,6 +302,9 @@ function BoardPage() {
   const activeCard = cards.find((c) => c._id === activeCardId) ?? null
   const activeCardLabels = activeCardId
     ? (cardLabelsMap[activeCardId] ?? [])
+    : []
+  const activeCardAssignees = activeCardId
+    ? (cardAssigneesMap[activeCardId] ?? [])
     : []
 
   return (
@@ -284,6 +322,7 @@ function BoardPage() {
         lists={lists}
         cards={cards}
         cardLabelsMap={cardLabelsMap}
+        cardAssigneesMap={cardAssigneesMap}
         onAddList={handleAddList}
         onRenameList={handleRenameList}
         onDeleteList={(list) => setListBeingDeleted(list)}
@@ -300,7 +339,8 @@ function BoardPage() {
         lists={lists}
         boardLabels={boardLabels ?? []}
         cardLabels={activeCardLabels}
-        isOwner={board.isOwner}
+        boardMembers={boardMembers ?? []}
+        cardAssignees={activeCardAssignees}
         isOpen={Boolean(activeCard)}
         onClose={() => setActiveCardId(null)}
         onSaveTitle={handleRenameCard}
@@ -309,9 +349,7 @@ function BoardPage() {
         onMoveToList={handleMoveCardToList}
         onArchive={handleArchiveCard}
         onToggleLabel={handleToggleCardLabel}
-        onCreateLabel={handleCreateLabel}
-        onUpdateLabel={handleUpdateLabel}
-        onRemoveLabel={handleRemoveLabel}
+        onToggleAssignee={handleToggleCardAssignee}
       />
 
       {/* Delete List Confirmation Dialog */}

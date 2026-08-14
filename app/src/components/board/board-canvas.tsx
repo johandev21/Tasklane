@@ -4,12 +4,13 @@ import { Plus } from 'lucide-react'
 import { Button } from '#/components/ui/button.tsx'
 import { Input } from '#/components/ui/input.tsx'
 import { ListColumn } from './list-column.tsx'
-import type { ListDoc, CardDoc, LabelDoc } from './types.ts'
+import type { BoardMemberUser, ListDoc, CardDoc, LabelDoc } from './types.ts'
 
 export interface BoardCanvasProps {
   lists: ListDoc[]
   cards: CardDoc[]
   cardLabelsMap?: Record<string, LabelDoc[] | undefined>
+  cardAssigneesMap?: Record<string, BoardMemberUser[] | undefined>
   onAddList: (title: string) => void
   onRenameList: (listId: ListDoc['_id'], newTitle: string) => void
   onDeleteList: (list: ListDoc) => void
@@ -24,6 +25,7 @@ export const BoardCanvas = memo(function BoardCanvas({
   lists,
   cards,
   cardLabelsMap = {},
+  cardAssigneesMap = {},
   onAddList,
   onRenameList,
   onDeleteList,
@@ -57,6 +59,7 @@ export const BoardCanvas = memo(function BoardCanvas({
               list={list}
               cards={listCards}
               cardLabelsMap={cardLabelsMap}
+              cardAssigneesMap={cardAssigneesMap}
               onRenameList={onRenameList}
               onDeleteList={onDeleteList}
               onArchiveAllCards={onArchiveAllCards}

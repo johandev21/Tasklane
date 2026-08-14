@@ -12,14 +12,15 @@ import {
 } from '#/components/ui/drawer.tsx'
 import { useIsMobile } from '#/hooks/use-mobile.ts'
 import { CardDetailModalContent } from './card-detail-modal-content.tsx'
-import type { CardDoc, ListDoc, LabelDoc } from '../types.ts'
+import type { BoardMemberUser, CardDoc, ListDoc, LabelDoc } from '../types.ts'
 
 export interface CardDetailModalProps {
   card: CardDoc | null
   lists: ListDoc[]
   boardLabels?: LabelDoc[]
   cardLabels?: LabelDoc[]
-  isOwner?: boolean
+  boardMembers?: BoardMemberUser[]
+  cardAssignees?: BoardMemberUser[]
   isOpen: boolean
   onClose: () => void
   onSaveTitle: (cardId: CardDoc['_id'], title: string) => void
@@ -28,13 +29,7 @@ export interface CardDetailModalProps {
   onMoveToList: (cardId: CardDoc['_id'], listId: ListDoc['_id']) => void
   onArchive: (cardId: CardDoc['_id']) => void
   onToggleLabel?: (cardId: CardDoc['_id'], label: LabelDoc) => void
-  onCreateLabel?: (name: string, color: string) => Promise<void> | void
-  onUpdateLabel?: (
-    labelId: LabelDoc['_id'],
-    name?: string,
-    color?: string,
-  ) => Promise<void> | void
-  onRemoveLabel?: (labelId: LabelDoc['_id']) => Promise<void> | void
+  onToggleAssignee?: (cardId: CardDoc['_id'], userId: string) => void
 }
 
 export function CardDetailModal({
@@ -42,7 +37,8 @@ export function CardDetailModal({
   lists,
   boardLabels = [],
   cardLabels = [],
-  isOwner = false,
+  boardMembers = [],
+  cardAssignees = [],
   isOpen,
   onClose,
   onSaveTitle,
@@ -51,9 +47,7 @@ export function CardDetailModal({
   onMoveToList,
   onArchive,
   onToggleLabel,
-  onCreateLabel,
-  onUpdateLabel,
-  onRemoveLabel,
+  onToggleAssignee,
 }: CardDetailModalProps) {
   const isMobile = useIsMobile()
 
@@ -65,7 +59,8 @@ export function CardDetailModal({
       lists={lists}
       boardLabels={boardLabels}
       cardLabels={cardLabels}
-      isOwner={isOwner}
+      boardMembers={boardMembers}
+      cardAssignees={cardAssignees}
       onSaveTitle={(title) => onSaveTitle(card._id, title)}
       onSaveDescription={(desc) => onSaveDescription(card._id, desc)}
       onUpdateDueDate={(dueDate) => onUpdateDueDate(card._id, dueDate)}
@@ -73,9 +68,7 @@ export function CardDetailModal({
       onArchive={() => onArchive(card._id)}
       onClose={onClose}
       onToggleLabel={(label) => onToggleLabel?.(card._id, label)}
-      onCreateLabel={onCreateLabel}
-      onUpdateLabel={onUpdateLabel}
-      onRemoveLabel={onRemoveLabel}
+      onToggleAssignee={(userId) => onToggleAssignee?.(card._id, userId)}
     />
   )
 

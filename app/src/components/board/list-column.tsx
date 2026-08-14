@@ -16,12 +16,13 @@ import {
 } from '#/components/ui/dropdown-menu.tsx'
 import { CardItem } from './card-item.tsx'
 import { ListComposer } from './list-composer.tsx'
-import type { ListDoc, CardDoc, LabelDoc } from './types.ts'
+import type { BoardMemberUser, ListDoc, CardDoc, LabelDoc } from './types.ts'
 
 export interface ListColumnProps {
   list: ListDoc
   cards: CardDoc[]
   cardLabelsMap?: Record<string, LabelDoc[] | undefined>
+  cardAssigneesMap?: Record<string, BoardMemberUser[] | undefined>
   onRenameList: (listId: ListDoc['_id'], newTitle: string) => void
   onDeleteList: (list: ListDoc) => void
   onArchiveAllCards: (listId: ListDoc['_id']) => void
@@ -35,6 +36,7 @@ export const ListColumn = memo(function ListColumn({
   list,
   cards,
   cardLabelsMap = {},
+  cardAssigneesMap = {},
   onRenameList,
   onDeleteList,
   onArchiveAllCards,
@@ -148,6 +150,7 @@ export const ListColumn = memo(function ListColumn({
             key={card._id}
             card={card}
             labels={cardLabelsMap[card._id]}
+            assignees={cardAssigneesMap[card._id]}
             onRenameCard={onRenameCard}
             onArchiveCard={onArchiveCard}
             onCardClick={onCardClick}

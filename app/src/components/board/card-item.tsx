@@ -1,12 +1,21 @@
 import { useState } from 'react'
 import { Edit2, Archive, Clock, Flame, AlignLeft } from 'lucide-react'
 import { Button } from '#/components/ui/button.tsx'
+import { Avatar, AvatarFallback, AvatarImage } from '#/components/ui/avatar.tsx'
 import { getLabelColor } from './labels/label-colors.ts'
-import type { CardDoc, LabelDoc } from './types.ts'
+import type { BoardMemberUser, CardDoc, LabelDoc } from './types.ts'
+
+function getInitials(name: string): string {
+  const parts = name.trim().split(/\s+/)
+  if (parts.length === 0 || !parts[0]) return '?'
+  if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase()
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+}
 
 export interface CardItemProps {
   card: CardDoc
   labels?: LabelDoc[]
+  assignees?: BoardMemberUser[]
   onRenameCard: (cardId: CardDoc['_id'], newTitle: string) => void
   onArchiveCard: (cardId: CardDoc['_id']) => void
   onCardClick?: (card: CardDoc) => void
@@ -15,6 +24,7 @@ export interface CardItemProps {
 export function CardItem({
   card,
   labels = [],
+  assignees = [],
   onRenameCard,
   onArchiveCard,
   onCardClick,
@@ -111,40 +121,61 @@ export function CardItem({
       )}
 
       {/* Badges / Metadata Indicators */}
-      {!isEditing && (card.dueDate || card.description) && (
-        <div className="flex items-center gap-2 flex-wrap pt-0.5 select-none">
-          {card.dueDate && (
-            <span
-              className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-medium border ${
-                isOverdue
-                  ? 'bg-red-500/15 border-red-300 dark:border-red-800/80 text-red-600 dark:text-red-400 font-semibold'
-                  : 'bg-muted/50 border-border/70 text-muted-foreground'
-              }`}
-            >
-              {isOverdue ? (
-                <Flame className="size-3 text-red-600 dark:text-red-400" />
-              ) : (
-                <Clock className="size-3" />
+      {!isEditing &&
+        (card.dueDate || card.description || assignees.length > 0) && (
+          <div className="flex items-center justify-between gap-2 flex-wrap pt-0.5 select-none">
+            <div className="flex items-center gap-2 flex-wrap">
+              {card.dueDate && (
+                <span
+                  className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-medium border ${
+                    isOverdue
+                      ? 'bg-red-500/15 border-red-300 dark:border-red-800/80 text-red-600 dark:text-red-400 font-semibold'
+                      : 'bg-muted/50 border-border/70 text-muted-foreground'
+                  }`}
+                >
+                  {isOverdue ? (
+                    <Flame className="size-3 text-red-600 dark:text-red-400" />
+                  ) : (
+                    <Clock className="size-3" />
+                  )}
+                  <span>
+                    {new Date(card.dueDate).toLocaleDateString(undefined, {
+                      month: 'short',
+                      day: 'numeric',
+                    })}
+                  </span>
+                </span>
               )}
-              <span>
-                {new Date(card.dueDate).toLocaleDateString(undefined, {
-                  month: 'short',
-                  day: 'numeric',
-                })}
-              </span>
-            </span>
-          )}
 
-          {card.description && (
-            <span
-              className="inline-flex items-center text-muted-foreground/70"
-              title="This card has a description"
-            >
-              <AlignLeft className="size-3.5" />
-            </span>
-          )}
-        </div>
-      )}
+              {card.description && (
+                <span
+                  className="inline-flex items-center text-muted-foreground/70"
+                  title="This card has a description"
+                >
+                  <AlignLeft className="size-3.5" />
+                </span>
+              )}
+            </div>
+
+            {/* Assignees Avatar Stack */}
+            {assignees.length > 0 && (
+              <div className="flex -space-x-1.5 overflow-hidden ml-auto">
+                {assignees.map((member) => (
+                  <Avatar
+                    key={member.userId}
+                    className="size-5 ring-1 ring-card border-none"
+                    title={member.name}
+                  >
+                    <AvatarImage src={member.imageUrl} alt={member.name} />
+                    <AvatarFallback className="text-[9px] font-semibold bg-primary/15 text-primary">
+                      {getInitials(member.name)}
+                    </AvatarFallback>
+                  </Avatar>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
       {/* Floating quick-actions on hover */}
       {!isEditing && (
