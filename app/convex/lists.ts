@@ -199,3 +199,49 @@ export const archiveAllCards = mutation({
     }
   },
 })
+
+/**
+ * Reorders a list on a board to a new position.
+ * Applies continuous 0..n-1 integer reindexing to all lists on the board.
+ */
+export const reorder = mutation({
+  args: {
+    listId: v.id('lists'),
+    newPosition: v.number(),
+  },
+  handler: async (ctx, args) => {
+    const listDoc = await ctx.db.get(args.listId)
+    if (!listDoc) {
+      throw new Error('List not found')
+    }
+
+    await assertBoardAccess(ctx, listDoc.boardId)
+
+    const boardLists = (
+      await ctx.db
+        .query('lists')
+        .withIndex('by_boardId', (q) => q.eq('boardId', listDoc.boardId))
+        .collect()
+    ).sort((a, b) => a.position - b.position)
+
+    const currentIndex = boardLists.findIndex((l) => l._id === args.listId)
+    if (currentIndex === -1) {
+      return
+    }
+
+    const [movedList] = boardLists.splice(currentIndex, 1)
+    const targetIndex = Math.max(
+      0,
+      Math.min(args.newPosition, boardLists.length),
+    )
+    boardLists.splice(targetIndex, 0, movedList)
+
+    // Re-index all lists on the board to consecutive 0..n-1 integers
+    for (let i = 0; i < boardLists.length; i++) {
+      const listDocItem = boardLists[i]
+      if (listDocItem.position !== i) {
+        await ctx.db.patch(listDocItem._id, { position: i })
+      }
+    }
+  },
+})

@@ -89,7 +89,11 @@ function formatActivityMessage(act: EnrichedActivityDoc): string {
     case 'comment_added':
       return `commented on "${payload.title ?? 'card'}": "${payload.snippet ?? payload.commentBody ?? ''}"`
     case 'card_moved':
-      return `moved card "${payload.title ?? ''}"`
+      return `moved card "${payload.title ?? 'Card'}"${
+        payload.sourceListTitle && payload.targetListTitle
+          ? ` from ${payload.sourceListTitle} to ${payload.targetListTitle}`
+          : ''
+      }`
     default:
       return act.type.replace(/_/g, ' ')
   }

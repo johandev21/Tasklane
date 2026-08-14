@@ -1,4 +1,6 @@
-import { useState } from 'react'
+import { useState, useMemo, memo } from 'react'
+import { useSortable } from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 import {
   Edit2,
   Archive,
@@ -6,8 +8,18 @@ import {
   Flame,
   AlignLeft,
   MessageSquare,
+  ArrowUpToLine,
+  ArrowDownToLine,
+  MoreHorizontal,
 } from 'lucide-react'
 import { Button } from '#/components/ui/button.tsx'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '#/components/ui/dropdown-menu.tsx'
 import { Avatar, AvatarFallback, AvatarImage } from '#/components/ui/avatar.tsx'
 import { getLabelColor } from './labels/label-colors.ts'
 import type { BoardMemberUser, CardDoc, LabelDoc } from './types.ts'
@@ -24,43 +36,97 @@ export interface CardItemProps {
   labels?: LabelDoc[]
   assignees?: BoardMemberUser[]
   commentsCount?: number
-  onRenameCard: (cardId: CardDoc['_id'], newTitle: string) => void
-  onArchiveCard: (cardId: CardDoc['_id']) => void
+  isDraggingOverlay?: boolean
+  onRenameCard?: (cardId: CardDoc['_id'], newTitle: string) => void
+  onArchiveCard?: (cardId: CardDoc['_id']) => void
   onCardClick?: (card: CardDoc) => void
+  onMoveToTop?: (cardId: CardDoc['_id']) => void
+  onMoveToBottom?: (cardId: CardDoc['_id']) => void
 }
 
-export function CardItem({
+export const CardItem = memo(function CardItem({
   card,
   labels = [],
   assignees = [],
   commentsCount = 0,
+  isDraggingOverlay = false,
   onRenameCard,
   onArchiveCard,
   onCardClick,
+  onMoveToTop,
+  onMoveToBottom,
 }: CardItemProps) {
   const [isEditing, setIsEditing] = useState(false)
   const [editTitle, setEditTitle] = useState(card.title)
+
+  const sortableData = useMemo(
+    () => ({
+      type: 'card' as const,
+      cardId: card._id,
+      listId: card.listId,
+    }),
+    [card._id, card.listId],
+  )
+
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({
+    id: card._id,
+    data: sortableData,
+    disabled: isEditing || isDraggingOverlay,
+  })
+
+  const style = isDraggingOverlay
+    ? undefined
+    : {
+        transform: CSS.Translate.toString(transform),
+        transition,
+      }
 
   const isOverdue = card.dueDate !== undefined && card.dueDate < Date.now()
 
   const handleSaveRename = () => {
     const trimmed = editTitle.trim()
     if (trimmed && trimmed !== card.title) {
-      onRenameCard(card._id, trimmed)
+      onRenameCard?.(card._id, trimmed)
     } else {
       setEditTitle(card.title)
     }
     setIsEditing(false)
   }
 
+  if (isDragging) {
+    return (
+      <div
+        ref={setNodeRef}
+        style={style}
+        className="h-20 rounded-xl border-2 border-dashed border-primary/40 bg-primary/5 opacity-50 transition-all"
+      />
+    )
+  }
+
   return (
     <div
+      ref={setNodeRef}
+      style={style}
+      {...(!isEditing && !isDraggingOverlay
+        ? { ...attributes, ...listeners }
+        : {})}
       onClick={() => {
-        if (!isEditing) {
+        if (!isEditing && !isDraggingOverlay) {
           onCardClick?.(card)
         }
       }}
-      className="group relative rounded-xl border border-border/80 bg-card p-3 shadow-2xs transition-all duration-150 hover:border-border hover:shadow-md hover:-translate-y-0.5 cursor-pointer flex flex-col gap-2"
+      className={`group relative rounded-xl border border-border/80 bg-card p-3 shadow-2xs transition-all duration-150 flex flex-col gap-2 ${
+        isDraggingOverlay
+          ? 'ring-2 ring-primary/40 shadow-2xl scale-[1.02] cursor-grabbing'
+          : 'hover:border-border hover:shadow-md hover:-translate-y-0.5 cursor-pointer'
+      }`}
     >
       {/* Label Badges */}
       {!isEditing && labels.length > 0 && (
@@ -84,6 +150,7 @@ export function CardItem({
         <div
           className="flex flex-col gap-1.5"
           onClick={(e) => e.stopPropagation()}
+          onPointerDown={(e) => e.stopPropagation()}
         >
           <textarea
             autoFocus
@@ -197,8 +264,12 @@ export function CardItem({
         )}
 
       {/* Floating quick-actions on hover */}
-      {!isEditing && (
-        <div className="absolute right-1.5 top-1.5 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+      {!isEditing && !isDraggingOverlay && (
+        <div
+          className="absolute right-1.5 top-1.5 flex items-center gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity"
+          onClick={(e) => e.stopPropagation()}
+          onPointerDown={(e) => e.stopPropagation()}
+        >
           <button
             type="button"
             onClick={(e) => {
@@ -211,19 +282,65 @@ export function CardItem({
             <Edit2 className="size-3" />
           </button>
 
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation()
-              onArchiveCard(card._id)
-            }}
-            className="rounded-md bg-card/90 p-1 text-muted-foreground/60 shadow-xs hover:bg-muted hover:text-foreground backdrop-blur-xs cursor-pointer"
-            title="Archive card"
-          >
-            <Archive className="size-3" />
-          </button>
+          {(onMoveToTop || onMoveToBottom) && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  className="rounded-md bg-card/90 p-1 text-muted-foreground shadow-xs hover:bg-muted hover:text-foreground backdrop-blur-xs cursor-pointer"
+                  title="Move card options"
+                >
+                  <MoreHorizontal className="size-3" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-44">
+                {onMoveToTop && (
+                  <DropdownMenuItem
+                    onClick={() => onMoveToTop(card._id)}
+                    className="text-xs cursor-pointer"
+                  >
+                    <ArrowUpToLine className="mr-2 size-3.5" />
+                    <span>Move to top</span>
+                  </DropdownMenuItem>
+                )}
+                {onMoveToBottom && (
+                  <DropdownMenuItem
+                    onClick={() => onMoveToBottom(card._id)}
+                    className="text-xs cursor-pointer"
+                  >
+                    <ArrowDownToLine className="mr-2 size-3.5" />
+                    <span>Move to bottom</span>
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuSeparator />
+                {onArchiveCard && (
+                  <DropdownMenuItem
+                    onClick={() => onArchiveCard(card._id)}
+                    className="text-xs text-destructive focus:text-destructive cursor-pointer"
+                  >
+                    <Archive className="mr-2 size-3.5" />
+                    <span>Archive card</span>
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+
+          {!onMoveToTop && !onMoveToBottom && onArchiveCard && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation()
+                onArchiveCard(card._id)
+              }}
+              className="rounded-md bg-card/90 p-1 text-muted-foreground/60 shadow-xs hover:bg-muted hover:text-foreground backdrop-blur-xs cursor-pointer"
+              title="Archive card"
+            >
+              <Archive className="size-3" />
+            </button>
+          )}
         </div>
       )}
     </div>
   )
-}
+})

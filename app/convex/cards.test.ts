@@ -296,7 +296,7 @@ describe('cards', () => {
     expect(restoreActivity?.payload.title).toBe('First Card')
   })
 
-  it('moves a card to a different list', async () => {
+  it('moves a card to a different list and logs card_moved activity', async () => {
     const t = convexTest(schema, import.meta.glob('./**/*.*s'))
     const asAlice = t.withIdentity({ tokenIdentifier: 'clerk|user_alice' })
 
@@ -324,6 +324,159 @@ describe('cards', () => {
 
     const card = await asAlice.query(api.cards.get, { cardId })
     expect(card?.listId).toBe(list2Id)
+    expect(card?.position).toBe(0)
+
+    // Verify activity row
+    const activities = await t.run(async (ctx) => {
+      return await ctx.db
+        .query('activity')
+        .withIndex('by_boardId', (q) => q.eq('boardId', boardId))
+        .collect()
+    })
+
+    const moveActivity = activities.find((a) => a.type === 'card_moved')
+    expect(moveActivity).toBeDefined()
+    expect(moveActivity?.payload.cardId).toBe(cardId)
+    expect(moveActivity?.payload.sourceListId).toBe(list1Id)
+    expect(moveActivity?.payload.sourceListTitle).toBe('Todo')
+    expect(moveActivity?.payload.targetListId).toBe(list2Id)
+    expect(moveActivity?.payload.targetListTitle).toBe('Done')
+  })
+
+  it('reorders cards within the same list with continuous 0..n-1 reindexing without logging card_moved', async () => {
+    const t = convexTest(schema, import.meta.glob('./**/*.*s'))
+    const asAlice = t.withIdentity({ tokenIdentifier: 'clerk|user_alice' })
+
+    const boardId = await asAlice.mutation(api.boards.create, {
+      name: 'Reorder Board',
+    })
+    const listId = await asAlice.mutation(api.lists.create, {
+      boardId,
+      title: 'Sprint Backlog',
+    })
+
+    const c0 = await asAlice.mutation(api.cards.create, {
+      listId,
+      title: 'Card 0',
+    })
+    const c1 = await asAlice.mutation(api.cards.create, {
+      listId,
+      title: 'Card 1',
+    })
+    const c2 = await asAlice.mutation(api.cards.create, {
+      listId,
+      title: 'Card 2',
+    })
+    const c3 = await asAlice.mutation(api.cards.create, {
+      listId,
+      title: 'Card 3',
+    })
+
+    // Move Card 3 to index 0: expected order [c3, c0, c1, c2]
+    await asAlice.mutation(api.cards.reorder, {
+      cardId: c3,
+      targetListId: listId,
+      newPosition: 0,
+    })
+
+    let cards = await asAlice.query(api.cards.listByBoard, { boardId })
+    expect(cards.map((c) => c._id)).toEqual([c3, c0, c1, c2])
+    expect(cards.map((c) => c.position)).toEqual([0, 1, 2, 3])
+
+    // Move Card 0 (currently index 1) to end (index 3): expected order [c3, c1, c2, c0]
+    await asAlice.mutation(api.cards.reorder, {
+      cardId: c0,
+      targetListId: listId,
+      newPosition: 3,
+    })
+
+    cards = await asAlice.query(api.cards.listByBoard, { boardId })
+    expect(cards.map((c) => c._id)).toEqual([c3, c1, c2, c0])
+    expect(cards.map((c) => c.position)).toEqual([0, 1, 2, 3])
+
+    // Verify NO card_moved activity was logged for intra-list reordering
+    const activities = await t.run(async (ctx) => {
+      return await ctx.db
+        .query('activity')
+        .withIndex('by_boardId', (q) => q.eq('boardId', boardId))
+        .collect()
+    })
+    const cardMovedActivities = activities.filter(
+      (a) => a.type === 'card_moved',
+    )
+    expect(cardMovedActivities).toHaveLength(0)
+  })
+
+  it('moves and inserts a card into another list at a specific position and reindexes both lists', async () => {
+    const t = convexTest(schema, import.meta.glob('./**/*.*s'))
+    const asAlice = t.withIdentity({ tokenIdentifier: 'clerk|user_alice' })
+
+    const boardId = await asAlice.mutation(api.boards.create, {
+      name: 'Cross List Board',
+    })
+    const listAId = await asAlice.mutation(api.lists.create, {
+      boardId,
+      title: 'In Progress',
+    })
+    const listBId = await asAlice.mutation(api.lists.create, {
+      boardId,
+      title: 'Review',
+    })
+
+    const a0 = await asAlice.mutation(api.cards.create, {
+      listId: listAId,
+      title: 'A0',
+    })
+    const a1 = await asAlice.mutation(api.cards.create, {
+      listId: listAId,
+      title: 'A1',
+    })
+    const a2 = await asAlice.mutation(api.cards.create, {
+      listId: listAId,
+      title: 'A2',
+    })
+
+    const b0 = await asAlice.mutation(api.cards.create, {
+      listId: listBId,
+      title: 'B0',
+    })
+    const b1 = await asAlice.mutation(api.cards.create, {
+      listId: listBId,
+      title: 'B1',
+    })
+
+    // Move A1 from List A into List B at position 1 (between B0 and B1)
+    await asAlice.mutation(api.cards.reorder, {
+      cardId: a1,
+      targetListId: listBId,
+      newPosition: 1,
+    })
+
+    const boardCards = await asAlice.query(api.cards.listByBoard, { boardId })
+    const listACards = boardCards.filter((c) => c.listId === listAId)
+    const listBCards = boardCards.filter((c) => c.listId === listBId)
+
+    // List A should now have [A0, A2] with positions [0, 1]
+    expect(listACards.map((c) => c._id)).toEqual([a0, a2])
+    expect(listACards.map((c) => c.position)).toEqual([0, 1])
+
+    // List B should now have [B0, A1, B1] with positions [0, 1, 2]
+    expect(listBCards.map((c) => c._id)).toEqual([b0, a1, b1])
+    expect(listBCards.map((c) => c.position)).toEqual([0, 1, 2])
+
+    // Verify activity row recorded
+    const activities = await t.run(async (ctx) => {
+      return await ctx.db
+        .query('activity')
+        .withIndex('by_boardId', (q) => q.eq('boardId', boardId))
+        .collect()
+    })
+    const moveActivity = activities.find((a) => a.type === 'card_moved')
+    expect(moveActivity).toBeDefined()
+    expect(moveActivity?.payload.cardId).toBe(a1)
+    expect(moveActivity?.payload.sourceListTitle).toBe('In Progress')
+    expect(moveActivity?.payload.targetListTitle).toBe('Review')
+    expect(moveActivity?.payload.newPosition).toBe(1)
   })
 
   it('rejects unauthorized users from card actions', async () => {
@@ -358,6 +511,14 @@ describe('cards', () => {
       asBob.mutation(api.cards.updateDueDate, {
         cardId,
         dueDate: Date.now(),
+      }),
+    ).rejects.toThrow('Unauthorized')
+
+    await expect(
+      asBob.mutation(api.cards.reorder, {
+        cardId,
+        targetListId: listId,
+        newPosition: 0,
       }),
     ).rejects.toThrow('Unauthorized')
 

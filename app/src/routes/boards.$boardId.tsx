@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, createFileRoute } from '@tanstack/react-router'
 import { useAuth } from '@clerk/tanstack-react-start'
 import { useMutation, useQuery } from 'convex/react'
+import { toast } from 'sonner'
 import { api } from '../../convex/_generated/api'
 import type { Id } from '../../convex/_generated/dataModel'
 
@@ -77,18 +78,210 @@ function BoardPage() {
 
   // List Mutations
   const createListMutation = useMutation(api.lists.create)
-  const renameListMutation = useMutation(api.lists.rename)
+  const renameListMutation = useMutation(api.lists.rename).withOptimisticUpdate(
+    (localStore, { listId, title }) => {
+      const currentLists = localStore.getQuery(api.lists.list, {
+        boardId: typedBoardId,
+      })
+      if (!currentLists) return
+      localStore.setQuery(
+        api.lists.list,
+        { boardId: typedBoardId },
+        currentLists.map((l) => (l._id === listId ? { ...l, title } : l)),
+      )
+    },
+  )
+  const reorderListMutation = useMutation(
+    api.lists.reorder,
+  ).withOptimisticUpdate((localStore, { listId, newPosition }) => {
+    const currentLists = localStore.getQuery(api.lists.list, {
+      boardId: typedBoardId,
+    })
+    if (!currentLists) return
+
+    const currentIndex = currentLists.findIndex((l) => l._id === listId)
+    if (currentIndex === -1) return
+
+    const updated = [...currentLists].sort((a, b) => a.position - b.position)
+    const [moved] = updated.splice(currentIndex, 1)
+    const targetIndex = Math.max(0, Math.min(newPosition, updated.length))
+    updated.splice(targetIndex, 0, moved)
+
+    const reindexed = updated.map((item, idx) => ({
+      ...item,
+      position: idx,
+    }))
+
+    localStore.setQuery(api.lists.list, { boardId: typedBoardId }, reindexed)
+  })
   const deleteListMutation = useMutation(api.lists.remove)
   const archiveAllCardsMutation = useMutation(api.lists.archiveAllCards)
 
   // Card Mutations
   const createCardMutation = useMutation(api.cards.create)
-  const renameCardMutation = useMutation(api.cards.rename)
+  const renameCardMutation = useMutation(api.cards.rename).withOptimisticUpdate(
+    (localStore, { cardId, title }) => {
+      const currentCards = localStore.getQuery(api.cards.listByBoard, {
+        boardId: typedBoardId,
+      })
+      if (currentCards) {
+        localStore.setQuery(
+          api.cards.listByBoard,
+          { boardId: typedBoardId },
+          currentCards.map((c) => (c._id === cardId ? { ...c, title } : c)),
+        )
+      }
+    },
+  )
+  const reorderCardMutation = useMutation(
+    api.cards.reorder,
+  ).withOptimisticUpdate(
+    (localStore, { cardId, targetListId, newPosition }) => {
+      const currentCards = localStore.getQuery(api.cards.listByBoard, {
+        boardId: typedBoardId,
+      })
+      if (!currentCards) return
+
+      const card = currentCards.find((c) => c._id === cardId)
+      if (!card) return
+
+      const sourceListId = card.listId
+      const isSameList = sourceListId === targetListId
+
+      if (isSameList) {
+        const listCards = currentCards
+          .filter((c) => c.listId === sourceListId && !c.archived)
+          .sort((a, b) => a.position - b.position)
+
+        const currentIndex = listCards.findIndex((c) => c._id === cardId)
+        if (currentIndex === -1) return
+
+        const [moved] = listCards.splice(currentIndex, 1)
+        const targetIndex = Math.max(0, Math.min(newPosition, listCards.length))
+        listCards.splice(targetIndex, 0, moved)
+
+        const updatedListCards = listCards.map((c, idx) => ({
+          ...c,
+          position: idx,
+        }))
+
+        const otherCards = currentCards.filter(
+          (c) => c.listId !== sourceListId || c.archived,
+        )
+
+        localStore.setQuery(
+          api.cards.listByBoard,
+          { boardId: typedBoardId },
+          [...otherCards, ...updatedListCards].sort(
+            (a, b) => a.position - b.position,
+          ),
+        )
+      } else {
+        // Source list
+        const sourceCards = currentCards
+          .filter(
+            (c) => c.listId === sourceListId && c._id !== cardId && !c.archived,
+          )
+          .sort((a, b) => a.position - b.position)
+          .map((c, idx) => ({ ...c, position: idx }))
+
+        // Target list
+        const targetCards = currentCards
+          .filter(
+            (c) => c.listId === targetListId && c._id !== cardId && !c.archived,
+          )
+          .sort((a, b) => a.position - b.position)
+
+        const targetIndex = Math.max(
+          0,
+          Math.min(newPosition, targetCards.length),
+        )
+        targetCards.splice(targetIndex, 0, {
+          ...card,
+          listId: targetListId,
+        })
+
+        const updatedTargetCards = targetCards.map((c, idx) => ({
+          ...c,
+          listId: targetListId,
+          position: idx,
+        }))
+
+        const otherCards = currentCards.filter(
+          (c) =>
+            (c.listId !== sourceListId && c.listId !== targetListId) ||
+            c.archived,
+        )
+
+        localStore.setQuery(
+          api.cards.listByBoard,
+          { boardId: typedBoardId },
+          [...otherCards, ...sourceCards, ...updatedTargetCards].sort(
+            (a, b) => a.position - b.position,
+          ),
+        )
+      }
+    },
+  )
   const updateCardDescriptionMutation = useMutation(api.cards.updateDescription)
   const updateCardDueDateMutation = useMutation(api.cards.updateDueDate)
-  const archiveCardMutation = useMutation(api.cards.archive)
+  const archiveCardMutation = useMutation(
+    api.cards.archive,
+  ).withOptimisticUpdate((localStore, { cardId }) => {
+    const currentCards = localStore.getQuery(api.cards.listByBoard, {
+      boardId: typedBoardId,
+    })
+    if (!currentCards) return
+    localStore.setQuery(
+      api.cards.listByBoard,
+      { boardId: typedBoardId },
+      currentCards.filter((c) => c._id !== cardId),
+    )
+  })
   const restoreCardMutation = useMutation(api.cards.restore)
-  const moveCardToListMutation = useMutation(api.cards.moveToList)
+  const moveCardToListMutation = useMutation(
+    api.cards.moveToList,
+  ).withOptimisticUpdate((localStore, { cardId, targetListId }) => {
+    const currentCards = localStore.getQuery(api.cards.listByBoard, {
+      boardId: typedBoardId,
+    })
+    if (!currentCards) return
+
+    const card = currentCards.find((c) => c._id === cardId)
+    if (!card || card.listId === targetListId) return
+
+    const sourceListId = card.listId
+    const sourceCards = currentCards
+      .filter(
+        (c) => c.listId === sourceListId && c._id !== cardId && !c.archived,
+      )
+      .sort((a, b) => a.position - b.position)
+      .map((c, idx) => ({ ...c, position: idx }))
+
+    const targetCards = currentCards
+      .filter(
+        (c) => c.listId === targetListId && c._id !== cardId && !c.archived,
+      )
+      .sort((a, b) => a.position - b.position)
+
+    const updatedTargetCards = [
+      ...targetCards,
+      { ...card, listId: targetListId, position: targetCards.length },
+    ]
+
+    const otherCards = currentCards.filter(
+      (c) =>
+        (c.listId !== sourceListId && c.listId !== targetListId) || c.archived,
+    )
+
+    localStore.setQuery(
+      api.cards.listByBoard,
+      { boardId: typedBoardId },
+      [...otherCards, ...sourceCards, ...updatedTargetCards].sort(
+        (a, b) => a.position - b.position,
+      ),
+    )
+  })
 
   // Label Mutations
   const createLabelMutation = useMutation(api.labels.create)
@@ -257,6 +450,38 @@ function BoardPage() {
     })
   }
 
+  const handleReorderList = async (
+    listId: ListDoc['_id'],
+    newPosition: number,
+  ) => {
+    try {
+      await reorderListMutation({
+        listId,
+        newPosition,
+      })
+    } catch (err) {
+      console.error('Failed to reorder list:', err)
+      toast.error('Failed to reorder list. Changes were reverted.')
+    }
+  }
+
+  const handleReorderCard = async (
+    cardId: CardDoc['_id'],
+    targetListId: ListDoc['_id'],
+    newPosition: number,
+  ) => {
+    try {
+      await reorderCardMutation({
+        cardId,
+        targetListId,
+        newPosition,
+      })
+    } catch (err) {
+      console.error('Failed to reorder card:', err)
+      toast.error('Failed to move card. Changes were reverted.')
+    }
+  }
+
   const handleArchiveCard = async (cardId: CardDoc['_id']) => {
     await archiveCardMutation({
       cardId,
@@ -388,6 +613,8 @@ function BoardPage() {
         onRenameCard={handleRenameCard}
         onArchiveCard={handleArchiveCard}
         onCardClick={(card) => setActiveCardId(card._id)}
+        onReorderList={handleReorderList}
+        onReorderCard={handleReorderCard}
       />
 
       {/* Card Detail Modal (Desktop Dialog / Mobile Drawer) */}

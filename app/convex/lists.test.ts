@@ -174,4 +174,67 @@ describe('lists', () => {
     expect(deleteActivity?.payload.title).toBe('QA Testing')
     expect(deleteActivity?.payload.archivedCardsCount).toBe(2)
   })
+
+  it('reorders lists on a board with continuous 0..n-1 integer reindexing', async () => {
+    const t = convexTest(schema, import.meta.glob('./**/*.*s'))
+    const asAlice = t.withIdentity({ tokenIdentifier: 'clerk|user_alice' })
+
+    const boardId = await asAlice.mutation(api.boards.create, {
+      name: 'List Reorder Board',
+    })
+
+    const l0 = await asAlice.mutation(api.lists.create, {
+      boardId,
+      title: 'To Do',
+    })
+    const l1 = await asAlice.mutation(api.lists.create, {
+      boardId,
+      title: 'Doing',
+    })
+    const l2 = await asAlice.mutation(api.lists.create, {
+      boardId,
+      title: 'Done',
+    })
+
+    // Move Done (index 2) to first position (index 0) -> [Done, To Do, Doing]
+    await asAlice.mutation(api.lists.reorder, {
+      listId: l2,
+      newPosition: 0,
+    })
+
+    let lists = await asAlice.query(api.lists.list, { boardId })
+    expect(lists.map((l) => l._id)).toEqual([l2, l0, l1])
+    expect(lists.map((l) => l.position)).toEqual([0, 1, 2])
+
+    // Move Doing (index 2) to index 1 -> [Done, Doing, To Do]
+    await asAlice.mutation(api.lists.reorder, {
+      listId: l1,
+      newPosition: 1,
+    })
+
+    lists = await asAlice.query(api.lists.list, { boardId })
+    expect(lists.map((l) => l._id)).toEqual([l2, l1, l0])
+    expect(lists.map((l) => l.position)).toEqual([0, 1, 2])
+  })
+
+  it('rejects unauthorized users from reordering lists', async () => {
+    const t = convexTest(schema, import.meta.glob('./**/*.*s'))
+    const asAlice = t.withIdentity({ tokenIdentifier: 'clerk|user_alice' })
+    const asBob = t.withIdentity({ tokenIdentifier: 'clerk|user_bob' })
+
+    const boardId = await asAlice.mutation(api.boards.create, {
+      name: 'Secret Project',
+    })
+    const listId = await asAlice.mutation(api.lists.create, {
+      boardId,
+      title: 'Confidential',
+    })
+
+    await expect(
+      asBob.mutation(api.lists.reorder, {
+        listId,
+        newPosition: 0,
+      }),
+    ).rejects.toThrow('Unauthorized')
+  })
 })

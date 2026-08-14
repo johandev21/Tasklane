@@ -292,7 +292,8 @@ export const updateDueDate = mutation({
 })
 
 /**
- * Moves a card to a different list within the same board.
+ * Moves a card to a different list within the same board, placing it at the end of the target list.
+ * Continuous 0..n-1 integer reindexing is applied and a card_moved activity row is recorded.
  */
 export const moveToList = mutation({
   args: {
@@ -310,26 +311,191 @@ export const moveToList = mutation({
       throw new Error('Target list not found on this board')
     }
 
-    await assertBoardAccess(ctx, cardDoc.boardId)
+    const { userId } = await assertBoardAccess(ctx, cardDoc.boardId)
 
     if (cardDoc.listId === args.targetListId) {
       return
     }
 
+    const sourceListId = cardDoc.listId
+    const sourceListDoc = await ctx.db.get(sourceListId)
+
+    // Re-index source list cards
+    const sourceCards = (
+      await ctx.db
+        .query('cards')
+        .withIndex('by_listId', (q) => q.eq('listId', sourceListId))
+        .collect()
+    )
+      .filter((c) => !c.archived && c._id !== args.cardId)
+      .sort((a, b) => a.position - b.position)
+
+    for (let i = 0; i < sourceCards.length; i++) {
+      const card = sourceCards[i]
+      if (card.position !== i) {
+        await ctx.db.patch(card._id, { position: i })
+      }
+    }
+
+    // Target cards
     const targetCards = (
       await ctx.db
         .query('cards')
         .withIndex('by_listId', (q) => q.eq('listId', args.targetListId))
         .collect()
-    ).filter((c) => !c.archived)
+    )
+      .filter((c) => !c.archived && c._id !== args.cardId)
+      .sort((a, b) => a.position - b.position)
 
-    const nextPosition =
-      targetCards.reduce((max, c) => Math.max(max, c.position), -1) + 1
+    const nextPosition = targetCards.length
 
     await ctx.db.patch(args.cardId, {
       listId: args.targetListId,
       position: nextPosition,
     })
+
+    // Write activity row
+    await ctx.db.insert('activity', {
+      boardId: cardDoc.boardId,
+      actorId: userId,
+      type: 'card_moved',
+      payload: {
+        cardId: args.cardId,
+        title: cardDoc.title,
+        sourceListId,
+        sourceListTitle: sourceListDoc?.title ?? 'List',
+        targetListId: args.targetListId,
+        targetListTitle: targetList.title,
+        newPosition: nextPosition,
+      },
+    })
+  },
+})
+
+/**
+ * Reorders a card within its current list or moves and reorders it in a target list.
+ * Continuous 0..n-1 integer reindexing is applied to all affected lists to guarantee
+ * consistent ordering under concurrent operations.
+ * Writes a card_moved activity row when moving between different lists.
+ */
+export const reorder = mutation({
+  args: {
+    cardId: v.id('cards'),
+    targetListId: v.id('lists'),
+    newPosition: v.number(),
+  },
+  handler: async (ctx, args) => {
+    const cardDoc = await ctx.db.get(args.cardId)
+    if (!cardDoc) {
+      throw new Error('Card not found')
+    }
+
+    const targetListDoc = await ctx.db.get(args.targetListId)
+    if (!targetListDoc || targetListDoc.boardId !== cardDoc.boardId) {
+      throw new Error('Target list not found on this board')
+    }
+
+    const { userId } = await assertBoardAccess(ctx, cardDoc.boardId)
+
+    const sourceListId = cardDoc.listId
+    const isSameList = sourceListId === args.targetListId
+
+    if (isSameList) {
+      // Intra-list reordering
+      const activeCards = (
+        await ctx.db
+          .query('cards')
+          .withIndex('by_listId', (q) => q.eq('listId', sourceListId))
+          .collect()
+      )
+        .filter((c) => !c.archived)
+        .sort((a, b) => a.position - b.position)
+
+      const currentIndex = activeCards.findIndex((c) => c._id === args.cardId)
+      if (currentIndex === -1) {
+        return
+      }
+
+      const [movedCard] = activeCards.splice(currentIndex, 1)
+      const targetIndex = Math.max(
+        0,
+        Math.min(args.newPosition, activeCards.length),
+      )
+      activeCards.splice(targetIndex, 0, movedCard)
+
+      // Re-index all cards in the list to consecutive 0..n-1 integers
+      for (let i = 0; i < activeCards.length; i++) {
+        const card = activeCards[i]
+        if (card.position !== i) {
+          await ctx.db.patch(card._id, { position: i })
+        }
+      }
+    } else {
+      // Inter-list moving & reordering
+      const sourceListDoc = await ctx.db.get(sourceListId)
+
+      // 1. Fetch & re-index source list cards
+      const sourceCards = (
+        await ctx.db
+          .query('cards')
+          .withIndex('by_listId', (q) => q.eq('listId', sourceListId))
+          .collect()
+      )
+        .filter((c) => !c.archived && c._id !== args.cardId)
+        .sort((a, b) => a.position - b.position)
+
+      for (let i = 0; i < sourceCards.length; i++) {
+        const card = sourceCards[i]
+        if (card.position !== i) {
+          await ctx.db.patch(card._id, { position: i })
+        }
+      }
+
+      // 2. Fetch & insert into target list cards
+      const targetCards = (
+        await ctx.db
+          .query('cards')
+          .withIndex('by_listId', (q) => q.eq('listId', args.targetListId))
+          .collect()
+      )
+        .filter((c) => !c.archived && c._id !== args.cardId)
+        .sort((a, b) => a.position - b.position)
+
+      const targetIndex = Math.max(
+        0,
+        Math.min(args.newPosition, targetCards.length),
+      )
+      targetCards.splice(targetIndex, 0, cardDoc)
+
+      // 3. Re-index all cards in the target list
+      for (let i = 0; i < targetCards.length; i++) {
+        const card = targetCards[i]
+        if (card._id === args.cardId) {
+          await ctx.db.patch(card._id, {
+            listId: args.targetListId,
+            position: i,
+          })
+        } else if (card.position !== i) {
+          await ctx.db.patch(card._id, { position: i })
+        }
+      }
+
+      // 4. Record card_moved activity row
+      await ctx.db.insert('activity', {
+        boardId: cardDoc.boardId,
+        actorId: userId,
+        type: 'card_moved',
+        payload: {
+          cardId: args.cardId,
+          title: cardDoc.title,
+          sourceListId,
+          sourceListTitle: sourceListDoc?.title ?? 'List',
+          targetListId: args.targetListId,
+          targetListTitle: targetListDoc.title,
+          newPosition: targetIndex,
+        },
+      })
+    }
   },
 })
 
