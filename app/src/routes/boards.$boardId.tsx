@@ -14,6 +14,7 @@ import {
 } from '#/components/ui/empty.tsx'
 import { Button } from '#/components/ui/button.tsx'
 
+import { CardDetailModal } from '#/components/board/modal/card-detail-modal.tsx'
 import { BoardHeader } from '#/components/board/board-header.tsx'
 import { BoardCanvas } from '#/components/board/board-canvas.tsx'
 import { DeleteListDialog } from '#/components/board/delete-list-dialog.tsx'
@@ -31,25 +32,34 @@ function BoardPage() {
 
   const { isLoaded, isSignedIn } = useAuth()
 
-  // Live subscriptions to board, lists, active cards, and activity log
+  // Live subscriptions to board, lists, active cards, archived cards, and activity log
   const board = useQuery(api.boards.get, { boardId: typedBoardId })
   const lists = useQuery(api.lists.list, { boardId: typedBoardId })
   const cards = useQuery(api.cards.listByBoard, { boardId: typedBoardId })
+  const archivedCards = useQuery(api.cards.listArchivedByBoard, {
+    boardId: typedBoardId,
+  })
   const activities = useQuery(api.activity.list, { boardId: typedBoardId })
 
-  // Mutations
+  // List Mutations
   const createListMutation = useMutation(api.lists.create)
   const renameListMutation = useMutation(api.lists.rename)
   const deleteListMutation = useMutation(api.lists.remove)
   const archiveAllCardsMutation = useMutation(api.lists.archiveAllCards)
 
+  // Card Mutations
   const createCardMutation = useMutation(api.cards.create)
   const renameCardMutation = useMutation(api.cards.rename)
+  const updateCardDescriptionMutation = useMutation(api.cards.updateDescription)
+  const updateCardDueDateMutation = useMutation(api.cards.updateDueDate)
   const archiveCardMutation = useMutation(api.cards.archive)
+  const restoreCardMutation = useMutation(api.cards.restore)
+  const moveCardToListMutation = useMutation(api.cards.moveToList)
 
   // Local UI State
   const [isActivityMenuOpen, setIsActivityMenuOpen] = useState(false)
   const [listBeingDeleted, setListBeingDeleted] = useState<ListDoc | null>(null)
+  const [activeCardId, setActiveCardId] = useState<Id<'cards'> | null>(null)
 
   if (
     !isLoaded ||
@@ -146,8 +156,47 @@ function BoardPage() {
     })
   }
 
+  const handleUpdateDescription = async (
+    cardId: CardDoc['_id'],
+    description: string,
+  ) => {
+    await updateCardDescriptionMutation({
+      cardId,
+      description: description || undefined,
+    })
+  }
+
+  const handleUpdateDueDate = async (
+    cardId: CardDoc['_id'],
+    dueDate: number | undefined,
+  ) => {
+    await updateCardDueDateMutation({
+      cardId,
+      dueDate,
+    })
+  }
+
+  const handleMoveCardToList = async (
+    cardId: CardDoc['_id'],
+    targetListId: ListDoc['_id'],
+  ) => {
+    await moveCardToListMutation({
+      cardId,
+      targetListId,
+    })
+  }
+
   const handleArchiveCard = async (cardId: CardDoc['_id']) => {
     await archiveCardMutation({
+      cardId,
+    })
+    if (activeCardId === cardId) {
+      setActiveCardId(null)
+    }
+  }
+
+  const handleRestoreCard = async (cardId: CardDoc['_id']) => {
+    await restoreCardMutation({
       cardId,
     })
   }
@@ -155,6 +204,8 @@ function BoardPage() {
   const deletedListCardCount = listBeingDeleted
     ? cards.filter((c) => c.listId === listBeingDeleted._id).length
     : 0
+
+  const activeCard = cards.find((c) => c._id === activeCardId) ?? null
 
   return (
     <div className="flex h-screen flex-col bg-app-background font-sans overflow-hidden">
@@ -177,6 +228,20 @@ function BoardPage() {
         onAddCard={handleAddCard}
         onRenameCard={handleRenameCard}
         onArchiveCard={handleArchiveCard}
+        onCardClick={(card) => setActiveCardId(card._id)}
+      />
+
+      {/* Card Detail Modal (Desktop Dialog / Mobile Drawer) */}
+      <CardDetailModal
+        card={activeCard}
+        lists={lists}
+        isOpen={Boolean(activeCard)}
+        onClose={() => setActiveCardId(null)}
+        onSaveTitle={handleRenameCard}
+        onSaveDescription={handleUpdateDescription}
+        onUpdateDueDate={handleUpdateDueDate}
+        onMoveToList={handleMoveCardToList}
+        onArchive={handleArchiveCard}
       />
 
       {/* Delete List Confirmation Dialog */}
@@ -188,11 +253,13 @@ function BoardPage() {
         onConfirm={handleDeleteListConfirm}
       />
 
-      {/* Board Menu / Activity Feed Sheet */}
+      {/* Board Menu / Activity Feed & Archive Sheet */}
       <BoardMenuSheet
         activities={activities ?? []}
+        archivedCards={archivedCards ?? []}
         isOpen={isActivityMenuOpen}
         onClose={() => setIsActivityMenuOpen(false)}
+        onRestoreCard={handleRestoreCard}
       />
     </div>
   )

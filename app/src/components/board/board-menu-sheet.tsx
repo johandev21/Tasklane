@@ -1,16 +1,25 @@
-import { Activity } from 'lucide-react'
+import { RotateCcw } from 'lucide-react'
 import {
   Sheet,
   SheetContent,
   SheetHeader,
   SheetTitle,
 } from '#/components/ui/sheet.tsx'
-import type { EnrichedActivityDoc } from './types.ts'
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from '#/components/ui/tabs.tsx'
+import { Button } from '#/components/ui/button.tsx'
+import type { EnrichedActivityDoc, CardDoc } from './types.ts'
 
 export interface BoardMenuSheetProps {
   activities: EnrichedActivityDoc[]
+  archivedCards?: CardDoc[]
   isOpen: boolean
   onClose: () => void
+  onRestoreCard?: (cardId: CardDoc['_id']) => void
 }
 
 function formatRelativeTime(timestamp: number): string {
@@ -49,6 +58,16 @@ function formatActivityMessage(act: EnrichedActivityDoc): string {
       return `added card "${payload.title ?? 'New Card'}" to ${payload.listTitle ?? 'list'}`
     case 'card_archived':
       return `archived card "${payload.title ?? ''}"`
+    case 'card_restored':
+      return `restored card "${payload.title ?? ''}"`
+    case 'description_changed':
+      return `updated description for "${payload.title ?? 'card'}"`
+    case 'due_date_set':
+      return `set due date on "${payload.title ?? 'card'}"`
+    case 'due_date_changed':
+      return `changed due date on "${payload.title ?? 'card'}"`
+    case 'due_date_cleared':
+      return `removed due date from "${payload.title ?? 'card'}"`
     case 'card_moved':
       return `moved card "${payload.title ?? ''}"`
     default:
@@ -58,52 +77,119 @@ function formatActivityMessage(act: EnrichedActivityDoc): string {
 
 export function BoardMenuSheet({
   activities,
+  archivedCards = [],
   isOpen,
   onClose,
+  onRestoreCard,
 }: BoardMenuSheetProps) {
   return (
     <Sheet open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <SheetContent
         side="right"
-        className="w-full sm:max-w-md p-0 flex flex-col bg-card"
+        className="w-full sm:max-w-md md:max-w-lg p-0 flex flex-col bg-card border-l border-border"
       >
-        <SheetHeader className="p-4 pb-3 border-b border-border/50 shrink-0">
-          <SheetTitle className="flex items-center gap-2 text-base font-heading font-bold">
-            <Activity className="size-4 text-primary" />
-            <span>Activity</span>
+        <SheetHeader className="p-4 pb-2 shrink-0">
+          <SheetTitle className="text-base font-heading font-bold text-foreground">
+            Board Menu
           </SheetTitle>
         </SheetHeader>
 
-        {/* Activity Feed Stream */}
-        <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4 min-h-0">
-          {activities.map((act) => {
-            const actorName = act.actor?.name || 'A team member'
-            const message = formatActivityMessage(act)
+        <Tabs defaultValue="activity" className="flex-1 flex flex-col min-h-0">
+          <div className="px-4 pt-1 pb-2 shrink-0">
+            <TabsList className="w-full grid grid-cols-2">
+              <TabsTrigger
+                value="activity"
+                className="text-xs sm:text-sm font-medium"
+              >
+                Activity
+              </TabsTrigger>
+              <TabsTrigger
+                value="archived"
+                className="text-xs sm:text-sm font-medium"
+              >
+                Archived
+              </TabsTrigger>
+            </TabsList>
+          </div>
 
-            return (
-              <div key={act._id} className="flex items-start gap-3 text-sm">
-                <div className="flex size-7 items-center justify-center rounded-full bg-muted font-heading text-xs font-semibold text-foreground ring-1 ring-border shrink-0 mt-0.5">
-                  {actorName.charAt(0).toUpperCase()}
+          {/* Activity Feed Stream */}
+          <TabsContent
+            value="activity"
+            className="flex-1 overflow-y-auto p-4 flex flex-col gap-4 min-h-0"
+          >
+            {activities.map((act) => {
+              const actorName = act.actor?.name || 'A team member'
+              const message = formatActivityMessage(act)
+
+              return (
+                <div key={act._id} className="flex items-start gap-3">
+                  <div className="flex size-7 items-center justify-center rounded-full bg-muted font-heading text-xs font-semibold text-foreground ring-1 ring-border shrink-0 mt-0.5">
+                    {actorName.charAt(0).toUpperCase()}
+                  </div>
+                  <div className="flex-1 min-w-0 flex flex-col gap-0.5">
+                    <p className="leading-snug text-foreground break-words text-xs sm:text-sm">
+                      <span className="font-semibold">{actorName}</span>{' '}
+                      <span className="text-muted-foreground">{message}</span>
+                    </p>
+                    <span className="text-xs text-muted-foreground block font-mono">
+                      {formatRelativeTime(act._creationTime)}
+                    </span>
+                  </div>
                 </div>
-                <div className="flex-1 min-w-0 flex flex-col gap-0.5">
-                  <p className="leading-snug text-foreground break-all">
-                    <span className="font-semibold">{actorName}</span>{' '}
-                    <span className="text-muted-foreground">{message}</span>
-                  </p>
-                  <span className="text-xs text-muted-foreground block font-mono">
-                    {formatRelativeTime(act._creationTime)}
-                  </span>
-                </div>
+              )
+            })}
+
+            {activities.length === 0 && (
+              <div className="py-12 text-center text-xs sm:text-sm text-muted-foreground italic">
+                No activity recorded on this board yet.
               </div>
-            )
-          })}
+            )}
+          </TabsContent>
 
-          {activities.length === 0 && (
-            <div className="py-12 text-center text-sm text-muted-foreground italic">
-              No activity recorded on this board yet.
-            </div>
-          )}
-        </div>
+          {/* Archived Cards List */}
+          <TabsContent
+            value="archived"
+            className="flex-1 overflow-y-auto p-4 flex flex-col gap-3 min-h-0"
+          >
+            {archivedCards.map((card) => (
+              <div
+                key={card._id}
+                className="flex items-center justify-between gap-3 rounded-xl border border-border bg-card p-3 shadow-2xs"
+              >
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-foreground break-words text-xs sm:text-sm">
+                    {card.title}
+                  </p>
+                  {card.dueDate && (
+                    <span className="text-xs text-muted-foreground font-mono">
+                      Due{' '}
+                      {new Date(card.dueDate).toLocaleDateString(undefined, {
+                        month: 'short',
+                        day: 'numeric',
+                      })}
+                    </span>
+                  )}
+                </div>
+
+                <Button
+                  size="xs"
+                  variant="outline"
+                  onClick={() => onRestoreCard?.(card._id)}
+                  className="gap-1.5 shrink-0 text-xs cursor-pointer"
+                >
+                  <RotateCcw className="size-3" />
+                  <span>Restore</span>
+                </Button>
+              </div>
+            ))}
+
+            {archivedCards.length === 0 && (
+              <div className="py-12 text-center text-xs sm:text-sm text-muted-foreground italic">
+                No archived cards on this board.
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
       </SheetContent>
     </Sheet>
   )

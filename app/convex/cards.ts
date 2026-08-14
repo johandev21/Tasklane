@@ -142,3 +142,232 @@ export const archive = mutation({
     })
   },
 })
+
+/**
+ * Restores an archived card back to active status on the board.
+ * Positions it at the end of its list and writes a card_restored activity row.
+ */
+export const restore = mutation({
+  args: {
+    cardId: v.id('cards'),
+  },
+  handler: async (ctx, args) => {
+    const cardDoc = await ctx.db.get(args.cardId)
+    if (!cardDoc) {
+      throw new Error('Card not found')
+    }
+
+    const { userId } = await assertBoardAccess(ctx, cardDoc.boardId)
+
+    // Check if list still exists, otherwise assign to first available list
+    let targetListId = cardDoc.listId
+    const listDoc = await ctx.db.get(targetListId)
+    if (!listDoc) {
+      const firstList = await ctx.db
+        .query('lists')
+        .withIndex('by_boardId', (q) => q.eq('boardId', cardDoc.boardId))
+        .first()
+      if (!firstList) {
+        throw new Error('No lists available on this board to restore card')
+      }
+      targetListId = firstList._id
+    }
+
+    const activeListCards = (
+      await ctx.db
+        .query('cards')
+        .withIndex('by_listId', (q) => q.eq('listId', targetListId))
+        .collect()
+    ).filter((c) => !c.archived)
+
+    const maxPosition = activeListCards.reduce(
+      (max, c) => Math.max(max, c.position),
+      -1,
+    )
+    const nextPosition = maxPosition + 1
+
+    await ctx.db.patch(args.cardId, {
+      listId: targetListId,
+      archived: false,
+      position: nextPosition,
+    })
+
+    // Write activity row
+    await ctx.db.insert('activity', {
+      boardId: cardDoc.boardId,
+      actorId: userId,
+      type: 'card_restored',
+      payload: {
+        cardId: args.cardId,
+        title: cardDoc.title,
+      },
+    })
+  },
+})
+
+/**
+ * Updates a card's description and writes a description_changed activity row.
+ */
+export const updateDescription = mutation({
+  args: {
+    cardId: v.id('cards'),
+    description: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const cardDoc = await ctx.db.get(args.cardId)
+    if (!cardDoc) {
+      throw new Error('Card not found')
+    }
+
+    const { userId } = await assertBoardAccess(ctx, cardDoc.boardId)
+
+    await ctx.db.patch(args.cardId, {
+      description: args.description,
+    })
+
+    // Write activity row
+    await ctx.db.insert('activity', {
+      boardId: cardDoc.boardId,
+      actorId: userId,
+      type: 'description_changed',
+      payload: {
+        cardId: args.cardId,
+        title: cardDoc.title,
+      },
+    })
+  },
+})
+
+/**
+ * Sets, updates, or clears a card's due date and logs corresponding activity:
+ * due_date_set, due_date_changed, or due_date_cleared.
+ */
+export const updateDueDate = mutation({
+  args: {
+    cardId: v.id('cards'),
+    dueDate: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const cardDoc = await ctx.db.get(args.cardId)
+    if (!cardDoc) {
+      throw new Error('Card not found')
+    }
+
+    const { userId } = await assertBoardAccess(ctx, cardDoc.boardId)
+
+    const oldDueDate = cardDoc.dueDate
+    const newDueDate = args.dueDate
+
+    let activityType: string | null = null
+    if (oldDueDate === undefined && newDueDate !== undefined) {
+      activityType = 'due_date_set'
+    } else if (
+      oldDueDate !== undefined &&
+      newDueDate !== undefined &&
+      oldDueDate !== newDueDate
+    ) {
+      activityType = 'due_date_changed'
+    } else if (oldDueDate !== undefined && newDueDate === undefined) {
+      activityType = 'due_date_cleared'
+    }
+
+    await ctx.db.patch(args.cardId, {
+      dueDate: newDueDate,
+    })
+
+    if (activityType) {
+      await ctx.db.insert('activity', {
+        boardId: cardDoc.boardId,
+        actorId: userId,
+        type: activityType,
+        payload: {
+          cardId: args.cardId,
+          title: cardDoc.title,
+          dueDate: newDueDate,
+          oldDueDate,
+        },
+      })
+    }
+  },
+})
+
+/**
+ * Moves a card to a different list within the same board.
+ */
+export const moveToList = mutation({
+  args: {
+    cardId: v.id('cards'),
+    targetListId: v.id('lists'),
+  },
+  handler: async (ctx, args) => {
+    const cardDoc = await ctx.db.get(args.cardId)
+    if (!cardDoc) {
+      throw new Error('Card not found')
+    }
+
+    const targetList = await ctx.db.get(args.targetListId)
+    if (!targetList || targetList.boardId !== cardDoc.boardId) {
+      throw new Error('Target list not found on this board')
+    }
+
+    await assertBoardAccess(ctx, cardDoc.boardId)
+
+    if (cardDoc.listId === args.targetListId) {
+      return
+    }
+
+    const targetCards = (
+      await ctx.db
+        .query('cards')
+        .withIndex('by_listId', (q) => q.eq('listId', args.targetListId))
+        .collect()
+    ).filter((c) => !c.archived)
+
+    const nextPosition =
+      targetCards.reduce((max, c) => Math.max(max, c.position), -1) + 1
+
+    await ctx.db.patch(args.cardId, {
+      listId: args.targetListId,
+      position: nextPosition,
+    })
+  },
+})
+
+/**
+ * Returns a single card by its ID.
+ */
+export const get = query({
+  args: {
+    cardId: v.id('cards'),
+  },
+  handler: async (ctx, args) => {
+    const cardDoc = await ctx.db.get(args.cardId)
+    if (!cardDoc) {
+      return null
+    }
+
+    await assertBoardAccess(ctx, cardDoc.boardId)
+    return cardDoc
+  },
+})
+
+/**
+ * Returns all archived cards for a board.
+ */
+export const listArchivedByBoard = query({
+  args: {
+    boardId: v.id('boards'),
+  },
+  handler: async (ctx, args) => {
+    await assertBoardAccess(ctx, args.boardId)
+
+    const cards = await ctx.db
+      .query('cards')
+      .withIndex('by_board_and_archived', (q) =>
+        q.eq('boardId', args.boardId).eq('archived', true),
+      )
+      .collect()
+
+    return cards.sort((a, b) => b._creationTime - a._creationTime)
+  },
+})

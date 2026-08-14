@@ -16,6 +16,7 @@ export interface BoardCanvasProps {
   onAddCard: (listId: ListDoc['_id'], title: string) => void
   onRenameCard: (cardId: CardDoc['_id'], title: string) => void
   onArchiveCard: (cardId: CardDoc['_id']) => void
+  onCardClick?: (card: CardDoc) => void
 }
 
 export const BoardCanvas = memo(function BoardCanvas({
@@ -28,6 +29,7 @@ export const BoardCanvas = memo(function BoardCanvas({
   onAddCard,
   onRenameCard,
   onArchiveCard,
+  onCardClick,
 }: BoardCanvasProps) {
   const [isAddingList, setIsAddingList] = useState(false)
   const [newListTitle, setNewListTitle] = useState('')
@@ -58,6 +60,7 @@ export const BoardCanvas = memo(function BoardCanvas({
               onAddCard={onAddCard}
               onRenameCard={onRenameCard}
               onArchiveCard={onArchiveCard}
+              onCardClick={onCardClick}
             />
           )
         })}

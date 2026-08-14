@@ -27,6 +27,7 @@ export interface ListColumnProps {
   onAddCard: (listId: ListDoc['_id'], title: string) => void
   onRenameCard: (cardId: CardDoc['_id'], title: string) => void
   onArchiveCard: (cardId: CardDoc['_id']) => void
+  onCardClick?: (card: CardDoc) => void
 }
 
 export const ListColumn = memo(function ListColumn({
@@ -38,6 +39,7 @@ export const ListColumn = memo(function ListColumn({
   onAddCard,
   onRenameCard,
   onArchiveCard,
+  onCardClick,
 }: ListColumnProps) {
   const [isEditingTitle, setIsEditingTitle] = useState(false)
   const [titleValue, setTitleValue] = useState(list.title)
@@ -145,6 +147,7 @@ export const ListColumn = memo(function ListColumn({
             card={card}
             onRenameCard={onRenameCard}
             onArchiveCard={onArchiveCard}
+            onCardClick={onCardClick}
           />
         ))}
 
