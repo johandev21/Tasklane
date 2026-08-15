@@ -5,6 +5,7 @@ Plataforma de gestión de proyectos y colaboración en tiempo real estructurada 
 ## Tabla de Contenidos
 
 - [Acerca del Proyecto](#acerca-del-proyecto)
+- [Funcionalidades](#funcionalidades)
 - [Modelo de Dominio](#modelo-de-dominio)
 - [Stack Tecnológico](#stack-tecnológico)
 - [Decisiones de Arquitectura](#decisiones-de-arquitectura)
@@ -19,24 +20,37 @@ Plataforma de gestión de proyectos y colaboración en tiempo real estructurada 
 
 Tasklane es una aplicación web de gestión visual del trabajo diseñada para equipos de alto rendimiento. Su objetivo central es ofrecer una experiencia de colaboración fluida e instantánea: cualquier cambio realizado por un miembro (mover tarjetas, editar descripciones, asignar etiquetas o publicar comentarios) se refleja de forma inmediata en las pantallas de todos los usuarios conectados sin necesidad de recargar la página.
 
+## Funcionalidades
+
+- **Identidad**: registro, inicio y cierre de sesión con email y contraseña mediante Clerk.
+- **Dashboard**: vista de todos los Boards que un usuario posee o a los que pertenece, con creación de Boards y estados vacíos guiados.
+- **Boards, Lists y Cards**: CRUD completo con reordenamiento _drag & drop_ (listas y tarjetas), movimiento entre listas y edición en línea.
+- **Detalle de Card**: descripción con Markdown, etiquetas de la paleta del Board, fecha límite con estado de vencimiento, asignación de miembros y hilo cronológico de comentarios.
+- **Paleta de Labels**: gestión por el Owner de hasta 8 etiquetas (crear, renombrar, recolorar, eliminar); el cambio se propaga a todas las tarjetas.
+- **Archivo y restauración**: las tarjetas archivadas salen del tablero activo sin destruirse jamás.
+- **Miembros y permisos**: el Owner invita y remueve miembros por email; los permisos se verifican en Convex (no solo en la UI).
+- **Ciclo de vida del Board**: el Owner puede renombrar y eliminar permanentemente un Board, con confirmación destructiva explícita y borrado en cascada.
+- **Feed de Actividad**: registro cronológico inverso de cada verbo de actividad, en vivo y con avatar y hora relativa por actor.
+- **Presence en tiempo real**: franja de avatares con indicador verde de los miembros que están viendo el Board, actualizada por latidos y depuración automática.
+
 ## Modelo de Dominio
 
 El proyecto sigue un lenguaje ubicuo estricto para garantizar consistencia entre el código, la base de datos y la interfaz de usuario:
 
-| Término | Definición |
-|---|---|
-| **User** | Persona registrada en la plataforma con sesión gestionada por Clerk. |
-| **Board** | Espacio de trabajo colaborativo perteneciente a un Owner, quien puede invitar a Members. |
-| **Member** | Usuario con permisos de lectura y edición dentro de un Board específico. |
-| **Owner** | Creador del Board; posee facultades exclusivas de administración (renombrar, eliminar e invitar/remover miembros). |
-| **List** | Columna vertical dentro de un Board que agrupa tarjetas en un orden secuencial. |
-| **Card** | Unidad atómica de trabajo dentro de una List. Contiene título, descripción, etiquetas, fecha límite, asignados y comentarios. |
-| **Label** | Marcador con nombre y color perteneciente a una paleta fija de 8 tonos por Board. |
-| **Due date** | Fecha y hora límite opcional en una Card. No posee estados de completado; su vigencia se calcula dinámicamente. |
-| **Comment** | Mensaje cronológico adjunto a una Card, editable y eliminable únicamente por su autor. |
-| **Archive** | Estado de eliminación lógica (soft-delete). Las tarjetas archivadas no se destruyen y pueden ser restauradas. |
-| **Activity** | Registro de auditoría cronológico inverso de las acciones ejecutadas en el Board. |
-| **Presence** | Indicador en tiempo real de los miembros activos visualizando el Board mediante latidos (heartbeats). |
+| Término      | Definición                                                                                                                    |
+| ------------ | ----------------------------------------------------------------------------------------------------------------------------- |
+| **User**     | Persona registrada en la plataforma con sesión gestionada por Clerk.                                                          |
+| **Board**    | Espacio de trabajo colaborativo perteneciente a un Owner, quien puede invitar a Members.                                      |
+| **Member**   | Usuario con permisos de lectura y edición dentro de un Board específico.                                                      |
+| **Owner**    | Creador del Board; posee facultades exclusivas de administración (renombrar, eliminar e invitar/remover miembros).            |
+| **List**     | Columna vertical dentro de un Board que agrupa tarjetas en un orden secuencial.                                               |
+| **Card**     | Unidad atómica de trabajo dentro de una List. Contiene título, descripción, etiquetas, fecha límite, asignados y comentarios. |
+| **Label**    | Marcador con nombre y color perteneciente a una paleta fija de 8 tonos por Board.                                             |
+| **Due date** | Fecha y hora límite opcional en una Card. No posee estados de completado; su vigencia se calcula dinámicamente.               |
+| **Comment**  | Mensaje cronológico adjunto a una Card, editable y eliminable únicamente por su autor.                                        |
+| **Archive**  | Estado de eliminación lógica (soft-delete). Las tarjetas archivadas no se destruyen y pueden ser restauradas.                 |
+| **Activity** | Registro de auditoría cronológico inverso de las acciones ejecutadas en el Board.                                             |
+| **Presence** | Indicador en tiempo real de los miembros activos visualizando el Board mediante latidos (heartbeats).                         |
 
 ## Stack Tecnológico
 
@@ -60,17 +74,34 @@ El desarrollo se fundamenta en Registros de Decisiones Arquitectónicas (ADRs) d
 
 ```text
 ├── .agents/          # Habilidades y flujos de automatización para agentes
+├── CONTEXT.md        # Glosario del lenguaje ubicuo (Board, Card, Member, ...)
 ├── docs/             # Documentación, especificaciones y ADRs arquitectónicos
-│   └── adr/          # Architecture Decision Records
+│   └── adr/          # Architecture Decision Records (0001-0003)
 └── app/              # Aplicación TanStack Start
     ├── convex/       # Esquema, funciones serverless y configuración de Convex
-    │   ├── schema.ts # Definición completa del esquema relacional
-    │   ├── users.ts  # Sincronización y consultas de usuarios
-    │   └── ...
+    │   ├── schema.ts        # Definición completa del esquema relacional
+    │   ├── auth_helpers.ts  # Utilidad de autorización (member/owner)
+    │   ├── constants.ts     # Paleta de 8 colores y verbos de actividad
+    │   ├── users.ts         # Sincronización y consultas de usuarios
+    │   ├── boards.ts        # Creación, listado, rename y delete (Owner)
+    │   ├── lists.ts         # CRUD y reordenamiento de listas
+    │   ├── cards.ts         # CRUD, archivo/restauración, vencimiento y movimiento
+    │   ├── labels.ts        # Paleta de etiquetas y adjuntos a tarjetas
+    │   ├── assignees.ts     # Asignación de miembros a tarjetas
+    │   ├── comments.ts      # Hilo cronológico de comentarios
+    │   ├── members.ts       # Invitación y remoción de miembros
+    │   ├── activity.ts      # Feed de actividad con perfil de actor
+    │   ├── presence.ts      # Latidos de presencia y depuración de inactivos
+    │   ├── cron.ts          # Depuración programada de presence
+    │   └── *_generated/     # Tipos generados por Convex
     ├── src/
-    │   ├── components/ # Componentes UI del sistema de diseño (shadcn)
-    │   ├── routes/     # Rutas basadas en archivos de TanStack Router
-    │   └── ...
+    │   ├── routes/          # Rutas basadas en archivos (/, /home, /boards/$boardId)
+    │   ├── components/
+    │   │   ├── board/       # Header, canvas, listas, tarjetas, modal y sheets
+    │   │   ├── dashboard/   # Vista de Boards del usuario
+    │   │   ├── ui/          # Sistema de diseño shadcn/ui (Radix + Tailwind)
+    │   │   └── prototype/   # Prototipos estáticos de referencia (no en producción)
+    │   └── hooks/           # Hooks compartidos (useBoardPresence, useIsMobile)
     └── package.json
 ```
 
@@ -128,15 +159,15 @@ pnpm dev
 
 Todos los comandos deben ejecutarse desde la carpeta `app/`:
 
-| Comando | Descripción |
-|---|---|
-| `pnpm dev` | Inicia el servidor de desarrollo local en el puerto 3000. |
-| `pnpm convex:dev` | Inicia el backend de Convex y sincroniza esquemas y funciones en tiempo real. |
-| `pnpm build` | Compila la aplicación para producción. |
-| `pnpm preview` | Previsualiza el bundle de producción localmente. |
-| `pnpm test` | Ejecuta la suite de pruebas unitarias en memoria con Vitest. |
-| `pnpm typecheck` | Comprueba tipos de TypeScript sin emitir archivos (`tsc --noEmit`). |
-| `pnpm lint` | Analiza el código con ESLint. |
-| `pnpm check` | Verifica el formato del código con Prettier. |
-| `pnpm format` | Aplica correcciones automáticas de formato y reglas de linting. |
-| `pnpm generate-routes` | Regenera el árbol de rutas tipado de TanStack Router. |
+| Comando                | Descripción                                                                   |
+| ---------------------- | ----------------------------------------------------------------------------- |
+| `pnpm dev`             | Inicia el servidor de desarrollo local en el puerto 3000.                     |
+| `pnpm convex:dev`      | Inicia el backend de Convex y sincroniza esquemas y funciones en tiempo real. |
+| `pnpm build`           | Compila la aplicación para producción.                                        |
+| `pnpm preview`         | Previsualiza el bundle de producción localmente.                              |
+| `pnpm test`            | Ejecuta la suite de pruebas unitarias en memoria con Vitest.                  |
+| `pnpm typecheck`       | Comprueba tipos de TypeScript sin emitir archivos (`tsc --noEmit`).           |
+| `pnpm lint`            | Analiza el código con ESLint.                                                 |
+| `pnpm check`           | Verifica el formato del código con Prettier.                                  |
+| `pnpm format`          | Aplica correcciones automáticas de formato y reglas de linting.               |
+| `pnpm generate-routes` | Regenera el árbol de rutas tipado de TanStack Router.                         |
