@@ -86,6 +86,10 @@ function formatActivityMessage(act: EnrichedActivityDoc): string {
       return `assigned ${payload.memberName ?? 'a member'} to "${payload.title ?? 'card'}"`
     case 'assignee_removed':
       return `unassigned ${payload.memberName ?? 'a member'} from "${payload.title ?? 'card'}"`
+    case 'member_added':
+      return `added ${payload.memberName ?? payload.memberEmail ?? 'a member'} to the board`
+    case 'member_removed':
+      return `removed ${payload.memberName ?? payload.memberEmail ?? 'a member'} from the board`
     case 'comment_added':
       return `commented on "${payload.title ?? 'card'}": "${payload.snippet ?? payload.commentBody ?? ''}"`
     case 'card_moved':

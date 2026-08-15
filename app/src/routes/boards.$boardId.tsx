@@ -297,6 +297,10 @@ function BoardPage() {
   const updateCommentMutation = useMutation(api.comments.update)
   const deleteCommentMutation = useMutation(api.comments.remove)
 
+  // Member Mutations
+  const inviteMemberMutation = useMutation(api.members.inviteByEmail)
+  const removeMemberMutation = useMutation(api.members.remove)
+
   if (
     !isLoaded ||
     board === undefined ||
@@ -566,6 +570,20 @@ function BoardPage() {
     })
   }
 
+  const handleInviteMember = async (email: string) => {
+    await inviteMemberMutation({
+      boardId: typedBoardId,
+      email,
+    })
+  }
+
+  const handleRemoveMember = async (userId: string) => {
+    await removeMemberMutation({
+      boardId: typedBoardId,
+      userId,
+    })
+  }
+
   const deletedListCardCount = listBeingDeleted
     ? cards.filter((c) => c.listId === listBeingDeleted._id).length
     : 0
@@ -594,7 +612,12 @@ function BoardPage() {
       <header className="shrink-0 border-b border-border/60 bg-card/85 shadow-2xs backdrop-blur-md sticky top-0 z-30">
         <BoardHeader
           board={board}
+          members={boardMembers ?? []}
+          isOwner={board.isOwner}
+          currentUserId={currentUser?.tokenIdentifier}
           onOpenBoardMenu={() => setIsActivityMenuOpen(true)}
+          onInviteMember={handleInviteMember}
+          onRemoveMember={handleRemoveMember}
         />
       </header>
 
