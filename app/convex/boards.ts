@@ -1,5 +1,6 @@
 import { mutation, query } from './_generated/server'
 import { v } from 'convex/values'
+import { assertBoardAccess } from './auth_helpers'
 
 /**
  * Creates a new board with the authenticated user as its owner,
@@ -162,5 +163,148 @@ export const get = query({
       ...board,
       isOwner,
     }
+  },
+})
+
+/**
+ * Renames a board. Only the board owner can rename it.
+ * Records a board_renamed activity entry.
+ */
+export const rename = mutation({
+  args: {
+    boardId: v.id('boards'),
+    name: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const { userId, board, isOwner } = await assertBoardAccess(
+      ctx,
+      args.boardId,
+    )
+
+    if (!isOwner) {
+      throw new Error('Unauthorized: only the board owner can rename the board')
+    }
+
+    const trimmedName = args.name.trim()
+    if (!trimmedName) {
+      throw new Error('Board name cannot be empty')
+    }
+
+    const oldName = board.name
+    await ctx.db.patch(args.boardId, {
+      name: trimmedName,
+    })
+
+    // Record rename activity
+    await ctx.db.insert('activity', {
+      boardId: args.boardId,
+      actorId: userId,
+      type: 'board_renamed',
+      payload: {
+        oldName,
+        newName: trimmedName,
+      },
+    })
+  },
+})
+
+/**
+ * Permanently deletes a board and cascades the deletion of everything
+ * associated with it: cards (and their labels, assignees, and comments),
+ * lists, labels, memberships, activity log, and presence entries.
+ * Only the board owner can delete it.
+ */
+export const remove = mutation({
+  args: {
+    boardId: v.id('boards'),
+  },
+  handler: async (ctx, args) => {
+    const { isOwner } = await assertBoardAccess(ctx, args.boardId)
+
+    if (!isOwner) {
+      throw new Error('Unauthorized: only the board owner can delete the board')
+    }
+
+    // Cards and everything attached to them
+    const cards = await ctx.db
+      .query('cards')
+      .withIndex('by_boardId', (q) => q.eq('boardId', args.boardId))
+      .collect()
+
+    for (const card of cards) {
+      const cardLabels = await ctx.db
+        .query('cardLabels')
+        .withIndex('by_cardId', (q) => q.eq('cardId', card._id))
+        .collect()
+      for (const cardLabel of cardLabels) {
+        await ctx.db.delete(cardLabel._id)
+      }
+
+      const cardAssignees = await ctx.db
+        .query('cardAssignees')
+        .withIndex('by_cardId', (q) => q.eq('cardId', card._id))
+        .collect()
+      for (const assignee of cardAssignees) {
+        await ctx.db.delete(assignee._id)
+      }
+
+      const comments = await ctx.db
+        .query('comments')
+        .withIndex('by_cardId', (q) => q.eq('cardId', card._id))
+        .collect()
+      for (const comment of comments) {
+        await ctx.db.delete(comment._id)
+      }
+
+      await ctx.db.delete(card._id)
+    }
+
+    // Lists
+    const boardLists = await ctx.db
+      .query('lists')
+      .withIndex('by_boardId', (q) => q.eq('boardId', args.boardId))
+      .collect()
+    for (const listDoc of boardLists) {
+      await ctx.db.delete(listDoc._id)
+    }
+
+    // Labels
+    const labels = await ctx.db
+      .query('labels')
+      .withIndex('by_boardId', (q) => q.eq('boardId', args.boardId))
+      .collect()
+    for (const label of labels) {
+      await ctx.db.delete(label._id)
+    }
+
+    // Memberships
+    const memberships = await ctx.db
+      .query('boardMembers')
+      .withIndex('by_boardId', (q) => q.eq('boardId', args.boardId))
+      .collect()
+    for (const membership of memberships) {
+      await ctx.db.delete(membership._id)
+    }
+
+    // Activity log
+    const activities = await ctx.db
+      .query('activity')
+      .withIndex('by_boardId', (q) => q.eq('boardId', args.boardId))
+      .collect()
+    for (const act of activities) {
+      await ctx.db.delete(act._id)
+    }
+
+    // Presence entries
+    const presenceEntries = await ctx.db
+      .query('presence')
+      .withIndex('by_boardId', (q) => q.eq('boardId', args.boardId))
+      .collect()
+    for (const entry of presenceEntries) {
+      await ctx.db.delete(entry._id)
+    }
+
+    // The board itself
+    await ctx.db.delete(args.boardId)
   },
 })

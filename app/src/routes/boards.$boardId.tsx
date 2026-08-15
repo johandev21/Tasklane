@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, createFileRoute } from '@tanstack/react-router'
+import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useAuth } from '@clerk/tanstack-react-start'
 import { useMutation, useQuery } from 'convex/react'
 import { toast } from 'sonner'
@@ -301,6 +301,24 @@ function BoardPage() {
   const inviteMemberMutation = useMutation(api.members.inviteByEmail)
   const removeMemberMutation = useMutation(api.members.remove)
 
+  // Board Mutations
+  const navigate = useNavigate()
+  const renameBoardMutation = useMutation(
+    api.boards.rename,
+  ).withOptimisticUpdate((localStore, { name }) => {
+    const currentBoard = localStore.getQuery(api.boards.get, {
+      boardId: typedBoardId,
+    })
+    if (currentBoard) {
+      localStore.setQuery(
+        api.boards.get,
+        { boardId: typedBoardId },
+        { ...currentBoard, name },
+      )
+    }
+  })
+  const deleteBoardMutation = useMutation(api.boards.remove)
+
   if (
     !isLoaded ||
     board === undefined ||
@@ -584,6 +602,28 @@ function BoardPage() {
     })
   }
 
+  const handleRenameBoard = async (name: string) => {
+    try {
+      await renameBoardMutation({
+        boardId: typedBoardId,
+        name,
+      })
+    } catch (err) {
+      console.error('Failed to rename board:', err)
+      toast.error('Failed to rename board. Changes were reverted.')
+    }
+  }
+
+  const handleDeleteBoard = async () => {
+    try {
+      await deleteBoardMutation({ boardId: typedBoardId })
+      await navigate({ to: '/home' })
+    } catch (err) {
+      console.error('Failed to delete board:', err)
+      toast.error('Failed to delete board. Please try again.')
+    }
+  }
+
   const deletedListCardCount = listBeingDeleted
     ? cards.filter((c) => c.listId === listBeingDeleted._id).length
     : 0
@@ -618,6 +658,8 @@ function BoardPage() {
           onOpenBoardMenu={() => setIsActivityMenuOpen(true)}
           onInviteMember={handleInviteMember}
           onRemoveMember={handleRemoveMember}
+          onRenameBoard={handleRenameBoard}
+          onDeleteBoard={handleDeleteBoard}
         />
       </header>
 

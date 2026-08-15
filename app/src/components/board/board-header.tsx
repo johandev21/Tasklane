@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from '@tanstack/react-router'
-import { Menu, KanbanSquare, UserPlus } from 'lucide-react'
+import { Menu, KanbanSquare, Trash2, UserPlus } from 'lucide-react'
 import { UserButton } from '@clerk/tanstack-react-start'
 import { Button } from '#/components/ui/button.tsx'
 import {
@@ -14,6 +14,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '#/components/ui/avatar.tsx'
 import { ModeToggle } from '#/components/mode-toggle.tsx'
 import { BoardMembersDialog } from './board-members-dialog.tsx'
+import { DeleteBoardDialog } from './delete-board-dialog.tsx'
 import type { BoardDoc, BoardMemberUser } from './types.ts'
 
 function getInitials(name: string): string {
@@ -32,6 +33,8 @@ export interface BoardHeaderProps {
   onOpenActivityMenu?: () => void
   onInviteMember?: (email: string) => Promise<void>
   onRemoveMember?: (userId: string) => Promise<void>
+  onRenameBoard?: (name: string) => Promise<void>
+  onDeleteBoard?: () => Promise<void>
 }
 
 export function BoardHeader({
@@ -43,9 +46,31 @@ export function BoardHeader({
   onOpenActivityMenu,
   onInviteMember,
   onRemoveMember,
+  onRenameBoard,
+  onDeleteBoard,
 }: BoardHeaderProps) {
   const [isMembersDialogOpen, setIsMembersDialogOpen] = useState(false)
+  const [isEditingTitle, setIsEditingTitle] = useState(false)
+  const [titleInput, setTitleInput] = useState(board.name)
+  const [isDeleteBoardOpen, setIsDeleteBoardOpen] = useState(false)
   const handleOpen = onOpenBoardMenu || onOpenActivityMenu
+
+  // Keep the title input in sync when the board is renamed by anyone else
+  useEffect(() => {
+    if (!isEditingTitle) {
+      setTitleInput(board.name)
+    }
+  }, [board.name, isEditingTitle])
+
+  const handleSaveTitle = () => {
+    const trimmed = titleInput.trim()
+    if (trimmed && trimmed !== board.name) {
+      onRenameBoard?.(trimmed)
+    } else {
+      setTitleInput(board.name)
+    }
+    setIsEditingTitle(false)
+  }
 
   const maxVisibleAvatars = 3
   const visibleMembers = members.slice(0, maxVisibleAvatars)
@@ -76,9 +101,34 @@ export function BoardHeader({
               </BreadcrumbItem>
               <BreadcrumbSeparator className="hidden sm:inline-flex" />
               <BreadcrumbItem className="min-w-0">
-                <BreadcrumbPage className="font-heading text-sm sm:text-base font-semibold text-foreground truncate px-1.5 py-0.5 rounded-md">
-                  {board.name}
-                </BreadcrumbPage>
+                {isOwner && isEditingTitle ? (
+                  <input
+                    autoFocus
+                    value={titleInput}
+                    onChange={(e) => setTitleInput(e.target.value)}
+                    onBlur={handleSaveTitle}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleSaveTitle()
+                      if (e.key === 'Escape') {
+                        setTitleInput(board.name)
+                        setIsEditingTitle(false)
+                      }
+                    }}
+                    className="w-full max-w-xs sm:max-w-sm rounded-md border border-ring bg-background px-2 py-0.5 font-heading text-sm font-semibold text-foreground outline-none"
+                  />
+                ) : (
+                  <BreadcrumbPage
+                    onClick={() => isOwner && setIsEditingTitle(true)}
+                    className={`font-heading text-sm sm:text-base font-semibold text-foreground truncate px-1.5 py-0.5 rounded-md transition-colors ${
+                      isOwner
+                        ? 'cursor-pointer hover:bg-muted/60'
+                        : 'cursor-default'
+                    }`}
+                    title={isOwner ? 'Click to rename board' : undefined}
+                  >
+                    {board.name}
+                  </BreadcrumbPage>
+                )}
               </BreadcrumbItem>
             </BreadcrumbList>
           </Breadcrumb>
@@ -140,6 +190,18 @@ export function BoardHeader({
             <span className="hidden sm:inline">Board menu</span>
           </Button>
 
+          {isOwner && onDeleteBoard && (
+            <Button
+              variant="ghost"
+              size="icon-xs"
+              onClick={() => setIsDeleteBoardOpen(true)}
+              className="size-8 text-muted-foreground rounded-lg transition-colors hover:bg-destructive/10 hover:text-destructive"
+              title="Delete board"
+            >
+              <Trash2 className="size-4" />
+            </Button>
+          )}
+
           <div className="h-4 w-px bg-border/60 hidden sm:block" />
 
           <ModeToggle />
@@ -164,6 +226,16 @@ export function BoardHeader({
         onInviteMember={onInviteMember}
         onRemoveMember={onRemoveMember}
       />
+
+      {/* Delete Board Confirmation Dialog (Owner only) */}
+      {isOwner && onDeleteBoard && (
+        <DeleteBoardDialog
+          boardTitle={board.name}
+          isOpen={isDeleteBoardOpen}
+          onClose={() => setIsDeleteBoardOpen(false)}
+          onConfirm={onDeleteBoard}
+        />
+      )}
     </>
   )
 }
