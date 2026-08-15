@@ -12,6 +12,7 @@ import {
   TabsTrigger,
 } from '#/components/ui/tabs.tsx'
 import { Button } from '#/components/ui/button.tsx'
+import { Avatar, AvatarFallback, AvatarImage } from '#/components/ui/avatar.tsx'
 import { LabelPaletteManager } from './labels/label-palette-manager.tsx'
 import type { EnrichedActivityDoc, CardDoc, LabelDoc } from './types.ts'
 
@@ -58,6 +59,8 @@ function formatActivityMessage(act: EnrichedActivityDoc): string {
   switch (act.type) {
     case 'board_created':
       return `created board "${payload.boardName ?? 'this board'}"`
+    case 'board_renamed':
+      return `renamed board "${payload.oldName ?? ''}" to "${payload.newName ?? ''}"`
     case 'list_created':
       return `added list "${payload.title ?? 'New List'}"`
     case 'list_renamed':
@@ -162,9 +165,16 @@ export function BoardMenuSheet({
 
               return (
                 <div key={act._id} className="flex items-start gap-3">
-                  <div className="flex size-7 items-center justify-center rounded-full bg-muted font-heading text-xs font-semibold text-foreground ring-1 ring-border shrink-0 mt-0.5">
-                    {actorName.charAt(0).toUpperCase()}
-                  </div>
+                  <Avatar className="size-7 shrink-0 ring-1 ring-border mt-0.5">
+                    <AvatarImage
+                      src={act.actor?.imageUrl}
+                      alt={actorName}
+                      className="object-cover"
+                    />
+                    <AvatarFallback className="bg-muted font-heading text-xs font-semibold text-foreground">
+                      {actorName.charAt(0).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
                   <div className="flex-1 min-w-0 flex flex-col gap-0.5">
                     <p className="leading-snug text-foreground break-words text-xs sm:text-sm">
                       <span className="font-semibold">{actorName}</span>{' '}
