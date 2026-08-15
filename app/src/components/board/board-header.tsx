@@ -12,10 +12,15 @@ import {
   BreadcrumbSeparator,
 } from '#/components/ui/breadcrumb.tsx'
 import { Avatar, AvatarFallback, AvatarImage } from '#/components/ui/avatar.tsx'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '#/components/ui/popover.tsx'
 import { ModeToggle } from '#/components/mode-toggle.tsx'
 import { BoardMembersDialog } from './board-members-dialog.tsx'
 import { DeleteBoardDialog } from './delete-board-dialog.tsx'
-import type { BoardDoc, BoardMemberUser } from './types.ts'
+import type { BoardDoc, BoardMemberUser, PresenceViewer } from './types.ts'
 
 function getInitials(name: string): string {
   const parts = name.trim().split(/\s+/)
@@ -27,6 +32,7 @@ function getInitials(name: string): string {
 export interface BoardHeaderProps {
   board: BoardDoc
   members?: BoardMemberUser[]
+  presence?: PresenceViewer[]
   isOwner?: boolean
   currentUserId?: string
   onOpenBoardMenu?: () => void
@@ -40,6 +46,7 @@ export interface BoardHeaderProps {
 export function BoardHeader({
   board,
   members = [],
+  presence = [],
   isOwner,
   currentUserId,
   onOpenBoardMenu,
@@ -72,9 +79,9 @@ export function BoardHeader({
     setIsEditingTitle(false)
   }
 
-  const maxVisibleAvatars = 3
-  const visibleMembers = members.slice(0, maxVisibleAvatars)
-  const overflowCount = Math.max(0, members.length - maxVisibleAvatars)
+  const maxVisibleAvatars = 4
+  const visibleViewers = presence.slice(0, maxVisibleAvatars)
+  const overflowViewers = presence.slice(maxVisibleAvatars)
 
   return (
     <>
@@ -134,50 +141,81 @@ export function BoardHeader({
           </Breadcrumb>
         </div>
 
-        {/* Right: Members / Share Avatar Pile + Board Menu + Theme Toggle + User Menu */}
+        {/* Right: Presence Strip + Share + Board Menu + Theme Toggle + User Menu */}
         <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-          {/* Members Avatar Pile & Share Trigger */}
-          <div className="flex items-center gap-1.5">
-            {members.length > 0 && (
-              <button
-                type="button"
-                onClick={() => setIsMembersDialogOpen(true)}
-                className="flex -space-x-2 overflow-hidden py-1 px-0.5 rounded-full hover:opacity-80 transition-opacity cursor-pointer"
-                title="View board members"
+          {/* Presence Strip: Active Viewers */}
+          {presence.length > 0 && (
+            <div className="flex items-center gap-1.5">
+              <div
+                className="flex -space-x-2 overflow-hidden py-1 px-0.5"
+                title="Currently viewing"
               >
-                {visibleMembers.map((m) => (
-                  <Avatar
-                    key={m.userId}
-                    className="size-7 ring-2 ring-card shrink-0"
-                  >
-                    <AvatarImage src={m.imageUrl} alt={m.name} />
-                    <AvatarFallback className="text-xs font-semibold bg-muted text-foreground">
-                      {getInitials(m.name)}
-                    </AvatarFallback>
-                  </Avatar>
-                ))}
-                {overflowCount > 0 && (
-                  <div
-                    className="flex size-7 items-center justify-center rounded-full bg-muted text-xs font-semibold text-muted-foreground ring-2 ring-card"
-                    title={`+${overflowCount} more members`}
-                  >
-                    +{overflowCount}
+                {visibleViewers.map((viewer) => (
+                  <div key={viewer.userId} className="relative shrink-0">
+                    <Avatar className="size-7 ring-2 ring-card">
+                      <AvatarImage
+                        src={viewer.imageUrl}
+                        alt={viewer.name}
+                        className="object-cover"
+                      />
+                      <AvatarFallback className="text-xs font-semibold bg-muted text-foreground">
+                        {getInitials(viewer.name)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="absolute bottom-0 right-0 size-2 rounded-full bg-emerald-500 ring-1 ring-card" />
                   </div>
-                )}
-              </button>
-            )}
+                ))}
+              </div>
 
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setIsMembersDialogOpen(true)}
-              className="text-xs h-8 gap-1.5 cursor-pointer"
-              title="Share and manage board members"
-            >
-              <UserPlus className="size-3.5" />
-              <span className="hidden sm:inline">Share</span>
-            </Button>
-          </div>
+              {overflowViewers.length > 0 && (
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <button
+                      type="button"
+                      className="flex size-7 items-center justify-center rounded-full bg-muted text-xs font-semibold text-muted-foreground ring-2 ring-card transition-colors hover:bg-muted/80 hover:text-foreground cursor-pointer"
+                      title={`+${overflowViewers.length} more viewers`}
+                    >
+                      +{overflowViewers.length}
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent align="end" className="w-56 p-2 space-y-1">
+                    <div className="px-2 py-1 text-xs font-semibold text-muted-foreground">
+                      Currently Viewing Board
+                    </div>
+                    {presence.map((viewer) => (
+                      <div
+                        key={viewer.userId}
+                        className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-foreground"
+                      >
+                        <Avatar className="size-5 shrink-0">
+                          <AvatarImage
+                            src={viewer.imageUrl}
+                            alt={viewer.name}
+                          />
+                          <AvatarFallback className="text-xs">
+                            {getInitials(viewer.name)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className="flex-1 truncate">{viewer.name}</span>
+                        <span className="size-2 shrink-0 rounded-full bg-emerald-500" />
+                      </div>
+                    ))}
+                  </PopoverContent>
+                </Popover>
+              )}
+            </div>
+          )}
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setIsMembersDialogOpen(true)}
+            className="text-xs h-8 gap-1.5 cursor-pointer"
+            title="Share and manage board members"
+          >
+            <UserPlus className="size-3.5" />
+            <span className="hidden sm:inline">Share</span>
+          </Button>
 
           <Button
             variant="outline"

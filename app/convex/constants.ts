@@ -43,3 +43,14 @@ export const ACTIVITY_TYPES = [
 ] as const
 
 export type ActivityType = (typeof ACTIVITY_TYPES)[number]
+
+/**
+ * A Member is considered an active viewer while their last presence
+ * heartbeat is newer than this threshold.
+ */
+export const PRESENCE_ACTIVE_THRESHOLD_MS = 30_000
+
+/**
+ * How often the background sweep evicts stale presence heartbeats.
+ */
+export const PRESENCE_SWEEP_INTERVAL_SECONDS = 60

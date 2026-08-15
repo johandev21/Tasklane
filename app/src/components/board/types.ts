@@ -15,6 +15,13 @@ export interface BoardMemberUser {
   isOwner: boolean
 }
 
+export interface PresenceViewer {
+  userId: string
+  name: string
+  email: string
+  imageUrl?: string
+}
+
 export interface EnrichedCardAssignee {
   _id: CardAssigneeDoc['_id']
   cardId: CardDoc['_id']

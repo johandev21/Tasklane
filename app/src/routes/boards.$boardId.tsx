@@ -15,6 +15,7 @@ import {
 } from '#/components/ui/empty.tsx'
 import { Button } from '#/components/ui/button.tsx'
 
+import { useBoardPresence } from '#/hooks/use-board-presence'
 import { CardDetailModal } from '#/components/board/modal/card-detail-modal.tsx'
 import { BoardHeader } from '#/components/board/board-header.tsx'
 import { BoardCanvas } from '#/components/board/board-canvas.tsx'
@@ -64,6 +65,7 @@ function BoardPage() {
     { boardId: typedBoardId },
   )
   const currentUser = useQuery(api.users.currentUser)
+  const presenceViewers = useBoardPresence(board ? typedBoardId : null)
 
   // Local UI State
   const [isActivityMenuOpen, setIsActivityMenuOpen] = useState(false)
@@ -653,6 +655,7 @@ function BoardPage() {
         <BoardHeader
           board={board}
           members={boardMembers ?? []}
+          presence={presenceViewers ?? []}
           isOwner={board.isOwner}
           currentUserId={currentUser?.tokenIdentifier}
           onOpenBoardMenu={() => setIsActivityMenuOpen(true)}

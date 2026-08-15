@@ -15,9 +15,11 @@ import type * as boards from "../boards.js";
 import type * as cards from "../cards.js";
 import type * as comments from "../comments.js";
 import type * as constants from "../constants.js";
+import type * as cron from "../cron.js";
 import type * as labels from "../labels.js";
 import type * as lists from "../lists.js";
 import type * as members from "../members.js";
+import type * as presence from "../presence.js";
 import type * as users from "../users.js";
 
 import type {
@@ -34,9 +36,11 @@ declare const fullApi: ApiFromModules<{
   cards: typeof cards;
   comments: typeof comments;
   constants: typeof constants;
+  cron: typeof cron;
   labels: typeof labels;
   lists: typeof lists;
   members: typeof members;
+  presence: typeof presence;
   users: typeof users;
 }>;
 
