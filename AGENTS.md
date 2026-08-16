@@ -41,6 +41,28 @@ The five canonical triage labels: `needs-triage`, `needs-info`, `ready-for-agent
 
 Single-context — one root `CONTEXT.md` plus `docs/adr/`. See `docs/agents/domain.md`.
 
+## Convex & Clerk Authentication Patterns
+
+When working with authenticated queries and routes:
+
+1. **Frontend: Use `useConvexAuth()` and conditionally skip queries**:
+   - Do NOT rely solely on Clerk's `useAuth()` to fire queries. Clerk can be loaded before its JWT token is delivered to Convex's WebSocket connection on page refreshes.
+   - Use `const { isLoading, isAuthenticated } = useConvexAuth()` from `convex/react`.
+   - Pass `'skip'` to `useQuery` / `usePaginatedQuery` when `!isAuthenticated`:
+     ```tsx
+     const queryArgs = isAuthenticated ? { boardId } : 'skip'
+     const board = useQuery(api.boards.get, queryArgs)
+     ```
+   - Guard component rendering in sequence:
+     1. `if (isLoading) return <Skeleton />`
+     2. `if (!isAuthenticated) return <SignInRequired />`
+     3. `if (data === undefined) return <Skeleton />`
+     4. `if (data === null) return <NotFound />`
+
+2. **Backend: Queries must not throw on missing auth**:
+   - `query` handlers must return `null` or `[]` when `!identity` rather than throwing fatal errors. Throwing in queries crashes the client error boundary during initial token handshakes.
+   - `mutation` handlers should continue to throw on unauthorized access.
+
 ## Verify your work
 
 Always typecheck first before linting and formatting. Ensure the app has zero TypeScript errors via `pnpm typecheck` before running `pnpm lint`, `pnpm check`, or `pnpm format`.

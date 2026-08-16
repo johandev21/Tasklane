@@ -1,14 +1,6 @@
 import { Link } from '@tanstack/react-router'
+import { ArrowUpRight, Users } from 'lucide-react'
 import { Badge } from '#/components/ui/badge.tsx'
-import { Button } from '#/components/ui/button.tsx'
-import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from '#/components/ui/card.tsx'
-import { Progress } from '#/components/ui/progress.tsx'
 import type { BoardSummary } from './types.ts'
 
 interface BoardCardProps {
@@ -16,92 +8,56 @@ interface BoardCardProps {
 }
 
 /**
- * Production Board Card presenting workload progress, list breakdown, and membership.
+ * Minimalist board card presenting essential board metadata and direct navigation.
  */
 export function BoardCard({ board }: BoardCardProps) {
-  const lists = board.lists ?? []
-  const totalCards = board.cardsCount ?? 0
-
-  const completedCards =
-    lists.find(
-      (l) =>
-        l.name.toLowerCase().includes('done') ||
-        l.name.toLowerCase().includes('shipped') ||
-        l.name.toLowerCase().includes('resolved') ||
-        l.name.toLowerCase().includes('approved'),
-    )?.cardsCount ?? 0
-
-  const completionPercentage =
-    totalCards > 0 ? Math.round((completedCards / totalCards) * 100) : 0
+  const listsCount = board.listsCount
+  const cardsCount = board.cardsCount ?? 0
+  const memberCount = board.memberCount
 
   return (
-    <Card className="flex flex-col justify-between border-border/80 transition-shadow hover:shadow-md">
-      <CardHeader className="gap-2">
-        <div className="flex items-start justify-between gap-2">
+    <Link
+      to="/boards/$boardId"
+      params={{ boardId: board._id }}
+      className="group flex flex-col justify-between rounded-2xl border border-border/70 bg-card p-5 transition-all duration-150 hover:border-foreground/20 hover:shadow-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+    >
+      <div className="flex flex-col gap-3">
+        {/* Top Bar: Role badge & Arrow Affordance */}
+        <div className="flex items-center justify-between gap-2">
           <Badge
             variant={board.isOwner ? 'default' : 'secondary'}
-            className="text-xs"
+            className="text-xs font-medium"
           >
-            {board.isOwner ? 'Owner' : 'Member'}
+            {board.isOwner ? 'Owner' : 'Shared'}
           </Badge>
-          <span className="text-xs text-muted-foreground">
-            {board.listsCount} {board.listsCount === 1 ? 'list' : 'lists'}
+          <ArrowUpRight className="size-4 text-muted-foreground transition-transform duration-150 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-foreground" />
+        </div>
+
+        {/* Board Title */}
+        <h3 className="line-clamp-2 font-heading text-base font-semibold tracking-tight text-foreground transition-colors group-hover:text-foreground">
+          {board.name}
+        </h3>
+      </div>
+
+      {/* Essential Metadata */}
+      <div className="mt-6 flex items-center justify-between pt-3 text-xs text-muted-foreground">
+        <div className="flex items-center gap-1.5">
+          <span>
+            {listsCount} {listsCount === 1 ? 'list' : 'lists'}
+          </span>
+          <span className="text-border">•</span>
+          <span>
+            {cardsCount} {cardsCount === 1 ? 'card' : 'cards'}
           </span>
         </div>
 
-        <CardTitle className="line-clamp-2 text-base">
-          <Link
-            to="/boards/$boardId"
-            params={{ boardId: board._id }}
-            className="hover:underline"
-          >
-            {board.name}
-          </Link>
-        </CardTitle>
-      </CardHeader>
-
-      <CardContent className="flex flex-col gap-3 py-2">
-        {/* Workload Progress */}
-        <div className="flex flex-col gap-1.5">
-          <div className="flex items-center justify-between text-xs text-muted-foreground">
-            <span>
-              {totalCards} {totalCards === 1 ? 'card' : 'cards'}
-            </span>
-            <span>{completionPercentage}% complete</span>
-          </div>
-          <Progress value={completionPercentage} className="h-1.5" />
+        <div className="flex items-center gap-1.5">
+          <Users className="size-3.5 text-muted-foreground" />
+          <span>
+            {memberCount} {memberCount === 1 ? 'member' : 'members'}
+          </span>
         </div>
-
-        {/* Micro List Tags */}
-        {lists.length > 0 ? (
-          <div className="flex flex-wrap gap-1.5 pt-1">
-            {lists.slice(0, 3).map((list, idx) => (
-              <span
-                key={idx}
-                className="rounded-md border border-border/60 bg-muted/50 px-2 py-0.5 text-xs text-muted-foreground"
-              >
-                {list.name}: {list.cardsCount}
-              </span>
-            ))}
-            {lists.length > 3 && (
-              <span className="rounded-md border border-border/60 bg-muted/50 px-1.5 py-0.5 text-xs text-muted-foreground">
-                +{lists.length - 3} more
-              </span>
-            )}
-          </div>
-        ) : null}
-      </CardContent>
-
-      <CardFooter className="flex items-center justify-between border-t border-border/40 pt-3">
-        <span className="text-xs text-muted-foreground">
-          {board.memberCount} {board.memberCount === 1 ? 'member' : 'members'}
-        </span>
-        <Button variant="ghost" size="xs" asChild>
-          <Link to="/boards/$boardId" params={{ boardId: board._id }}>
-            Open board
-          </Link>
-        </Button>
-      </CardFooter>
-    </Card>
+      </div>
+    </Link>
   )
 }

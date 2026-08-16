@@ -101,12 +101,12 @@ export function BoardHeader({
           <Breadcrumb className="flex items-center text-sm min-w-0">
             <BreadcrumbList className="flex items-center text-sm">
               <BreadcrumbSeparator />
-              <BreadcrumbItem className="hidden sm:inline-flex">
+              <BreadcrumbItem className="hidden md:inline-flex">
                 <BreadcrumbLink asChild>
                   <Link to="/home">Boards</Link>
                 </BreadcrumbLink>
               </BreadcrumbItem>
-              <BreadcrumbSeparator className="hidden sm:inline-flex" />
+              <BreadcrumbSeparator className="hidden md:inline-flex" />
               <BreadcrumbItem className="min-w-0">
                 {isOwner && isEditingTitle ? (
                   <input
@@ -121,7 +121,7 @@ export function BoardHeader({
                         setIsEditingTitle(false)
                       }
                     }}
-                    className="w-full max-w-xs sm:max-w-sm rounded-md border border-ring bg-background px-2 py-0.5 font-heading text-sm font-semibold text-foreground outline-none"
+                    className="w-full max-w-[130px] xs:max-w-[180px] sm:max-w-xs md:max-w-sm rounded-md border border-ring bg-background px-2 py-0.5 font-heading text-sm font-semibold text-foreground outline-none"
                   />
                 ) : (
                   <BreadcrumbPage
@@ -142,16 +142,19 @@ export function BoardHeader({
         </div>
 
         {/* Right: Presence Strip + Share + Board Menu + Theme Toggle + User Menu */}
-        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-          {/* Presence Strip: Active Viewers */}
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+          {/* Presence Strip: Active Viewers (Desktop & Tablet; full list in Board Menu on mobile) */}
           {presence.length > 0 && (
-            <div className="flex items-center gap-1.5">
+            <div className="hidden sm:flex items-center gap-1.5">
               <div
                 className="flex -space-x-2 overflow-hidden py-1 px-0.5"
                 title="Currently viewing"
               >
-                {visibleViewers.map((viewer) => (
-                  <div key={viewer.userId} className="relative shrink-0">
+                {visibleViewers.map((viewer, idx) => (
+                  <div
+                    key={viewer.userId}
+                    className={`relative shrink-0 ${idx >= 2 ? 'hidden lg:block' : ''}`}
+                  >
                     <Avatar className="size-7 ring-2 ring-card">
                       <AvatarImage
                         src={viewer.imageUrl}
@@ -167,15 +170,21 @@ export function BoardHeader({
                 ))}
               </div>
 
-              {overflowViewers.length > 0 && (
+              {presence.length > 2 && (
                 <Popover>
                   <PopoverTrigger asChild>
                     <button
                       type="button"
                       className="flex size-7 items-center justify-center rounded-full bg-muted text-xs font-semibold text-muted-foreground ring-2 ring-card transition-colors hover:bg-muted/80 hover:text-foreground cursor-pointer"
-                      title={`+${overflowViewers.length} more viewers`}
+                      title={`${presence.length} viewers`}
                     >
-                      +{overflowViewers.length}
+                      <span className="lg:hidden">+{presence.length - 2}</span>
+                      <span className="hidden lg:inline">
+                        +
+                        {overflowViewers.length > 0
+                          ? overflowViewers.length
+                          : presence.length}
+                      </span>
                     </button>
                   </PopoverTrigger>
                   <PopoverContent align="end" className="w-56 p-2 space-y-1">
@@ -210,22 +219,22 @@ export function BoardHeader({
             variant="outline"
             size="sm"
             onClick={() => setIsMembersDialogOpen(true)}
-            className="text-xs h-8 gap-1.5 cursor-pointer"
+            className="h-8 px-2 sm:px-2.5 lg:px-3 text-xs gap-1.5 cursor-pointer"
             title="Share and manage board members"
           >
             <UserPlus className="size-3.5" />
-            <span className="hidden sm:inline">Share</span>
+            <span className="hidden lg:inline">Share</span>
           </Button>
 
           <Button
             variant="outline"
             size="sm"
             onClick={handleOpen}
-            className="text-xs h-8 gap-1.5 cursor-pointer"
+            className="h-8 px-2 sm:px-2.5 lg:px-3 text-xs gap-1.5 cursor-pointer"
             title="Open board menu"
           >
             <Menu className="size-3.5" />
-            <span className="hidden sm:inline">Board menu</span>
+            <span className="hidden lg:inline">Board menu</span>
           </Button>
 
           {isOwner && onDeleteBoard && (
@@ -233,16 +242,18 @@ export function BoardHeader({
               variant="ghost"
               size="icon-xs"
               onClick={() => setIsDeleteBoardOpen(true)}
-              className="size-8 text-muted-foreground rounded-lg transition-colors hover:bg-destructive/10 hover:text-destructive"
+              className="hidden lg:inline-flex size-8 text-muted-foreground rounded-lg transition-colors hover:bg-destructive/10 hover:text-destructive"
               title="Delete board"
             >
               <Trash2 className="size-4" />
             </Button>
           )}
 
-          <div className="h-4 w-px bg-border/60 hidden sm:block" />
+          <div className="h-4 w-px bg-border/60 hidden md:block" />
 
-          <ModeToggle />
+          <div className="hidden md:inline-flex">
+            <ModeToggle />
+          </div>
 
           <UserButton
             appearance={{

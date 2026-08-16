@@ -1,4 +1,4 @@
-import { Tag, Plus, Check } from 'lucide-react'
+import { Tag, Plus, Check, X } from 'lucide-react'
 import {
   Popover,
   PopoverContent,
@@ -40,23 +40,20 @@ export function CardModalLabels({
               key={lbl._id}
               type="button"
               onClick={() => onToggleLabel(lbl)}
-              className={`group flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-sm font-semibold transition-all max-w-full text-left cursor-pointer ${colorDef.badgeClass} ring-1 ring-ring/30 hover:opacity-80`}
+              className={`group flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-sm font-semibold transition-colors max-w-full text-left cursor-pointer ${colorDef.badgeClass} hover:opacity-80`}
               title="Click to remove from card"
             >
-              <span
-                className={`size-2 rounded-full ${colorDef.dotClass} shrink-0`}
-              />
               <span className="break-all">{lbl.name}</span>
-              <Check className="size-3 shrink-0 ml-0.5 opacity-70 group-hover:hidden" />
-              <span className="hidden group-hover:inline text-xs font-bold shrink-0 ml-0.5">
-                ×
+              <span className="relative inline-flex items-center justify-center size-3.5 shrink-0 ml-0.5">
+                <Check className="size-3.5 opacity-70 group-hover:opacity-0 transition-opacity" />
+                <X className="size-3.5 absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity" />
               </span>
             </button>
           )
         })}
 
         {/* Add / Toggle Labels Popover Trigger */}
-        <Popover>
+        <Popover modal={true}>
           <PopoverTrigger asChild>
             <Button
               variant="outline"
@@ -85,16 +82,13 @@ export function CardModalLabels({
                     key={lbl._id}
                     type="button"
                     onClick={() => onToggleLabel(lbl)}
-                    className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm transition-all text-left cursor-pointer ${
+                    className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm transition-colors text-left cursor-pointer ${
                       isSelected
-                        ? `${colorDef.badgeClass} font-semibold ring-1 ring-inset ring-foreground/25 shadow-2xs`
+                        ? `border ${colorDef.badgeClass} font-semibold shadow-2xs`
                         : 'hover:bg-muted/70 text-foreground border border-border/40'
                     }`}
                   >
                     <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                      <span
-                        className={`size-2.5 rounded-full ${colorDef.dotClass} shrink-0`}
-                      />
                       <span className="truncate break-all">{lbl.name}</span>
                     </div>
                     {isSelected && (

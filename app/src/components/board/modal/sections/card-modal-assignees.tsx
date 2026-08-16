@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Users, Plus, Check, Crown } from 'lucide-react'
+import { Users, Plus, Check, X, Crown } from 'lucide-react'
 import {
   Popover,
   PopoverContent,
@@ -58,7 +58,7 @@ export function CardModalAssignees({
             key={member.userId}
             type="button"
             onClick={() => onToggleAssignee?.(member.userId)}
-            className="group flex items-center gap-1.5 rounded-lg border border-border/80 bg-muted/40 hover:bg-muted px-2.5 py-1 text-xs font-medium text-foreground transition-all cursor-pointer shadow-2xs hover:border-border"
+            className="group flex items-center gap-1.5 rounded-lg border border-border/80 bg-muted/40 hover:bg-muted px-2.5 py-1 text-xs font-medium text-foreground transition-colors cursor-pointer shadow-2xs hover:border-border"
             title={`${member.name} - Click to unassign`}
           >
             <Avatar className="size-4.5 border-none">
@@ -68,15 +68,15 @@ export function CardModalAssignees({
               </AvatarFallback>
             </Avatar>
             <span className="break-all">{member.name}</span>
-            <Check className="size-3 text-muted-foreground group-hover:hidden shrink-0 ml-0.5" />
-            <span className="hidden group-hover:inline text-xs font-bold text-destructive shrink-0 ml-0.5">
-              ×
+            <span className="relative inline-flex items-center justify-center size-3.5 shrink-0 ml-0.5">
+              <Check className="size-3.5 text-muted-foreground group-hover:opacity-0 transition-opacity" />
+              <X className="size-3.5 text-destructive absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity" />
             </span>
           </button>
         ))}
 
         {/* Assign Member Popover */}
-        <Popover>
+        <Popover modal={true}>
           <PopoverTrigger asChild>
             <Button
               variant="outline"
@@ -117,9 +117,9 @@ export function CardModalAssignees({
                     key={member.userId}
                     type="button"
                     onClick={() => onToggleAssignee?.(member.userId)}
-                    className={`flex items-center justify-between rounded-lg px-2.5 py-2 text-xs transition-all text-left cursor-pointer ${
+                    className={`flex items-center justify-between rounded-lg px-2.5 py-2 text-xs transition-colors text-left cursor-pointer ${
                       isAssigned
-                        ? 'border border-primary/50 bg-primary/10 text-primary font-medium ring-1 ring-primary/20'
+                        ? 'border border-primary/50 bg-primary/10 text-primary font-medium shadow-2xs'
                         : 'border border-transparent bg-transparent text-foreground hover:bg-muted/70'
                     }`}
                   >

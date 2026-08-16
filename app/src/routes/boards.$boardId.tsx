@@ -1,7 +1,11 @@
 import { useState } from 'react'
 import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
-import { useAuth } from '@clerk/tanstack-react-start'
-import { useMutation, useQuery } from 'convex/react'
+import {
+  useConvexAuth,
+  useMutation,
+  usePaginatedQuery,
+  useQuery,
+} from 'convex/react'
 import { toast } from 'sonner'
 import { api } from '../../convex/_generated/api'
 import type { Id } from '../../convex/_generated/dataModel'
@@ -38,44 +42,55 @@ function BoardPage() {
   const { boardId } = Route.useParams()
   const typedBoardId = boardId as Id<'boards'>
 
-  const { isLoaded, isSignedIn } = useAuth()
+  const { isLoading: isAuthLoading, isAuthenticated } = useConvexAuth()
 
-  // Live subscriptions to board, lists, active cards, archived cards, activity log, labels, members, assignees, and comments
-  const board = useQuery(api.boards.get, { boardId: typedBoardId })
-  const lists = useQuery(api.lists.list, { boardId: typedBoardId })
-  const cards = useQuery(api.cards.listByBoard, { boardId: typedBoardId })
-  const archivedCards = useQuery(api.cards.listArchivedByBoard, {
-    boardId: typedBoardId,
-  })
-  const activities = useQuery(api.activity.list, { boardId: typedBoardId })
-  const boardLabels = useQuery(api.labels.listByBoard, {
-    boardId: typedBoardId,
-  })
-  const cardLabelsList = useQuery(api.labels.listCardLabelsForBoard, {
-    boardId: typedBoardId,
-  })
-  const boardMembers = useQuery(api.members.listByBoard, {
-    boardId: typedBoardId,
-  })
-  const cardAssigneesList = useQuery(api.assignees.listCardAssigneesForBoard, {
-    boardId: typedBoardId,
-  })
+  // Live subscriptions to board, lists, active cards, archived cards, labels, members, assignees, and comments
+  const queryArgs = isAuthenticated ? { boardId: typedBoardId } : 'skip'
+
+  const board = useQuery(api.boards.get, queryArgs)
+  const lists = useQuery(api.lists.list, queryArgs)
+  const cards = useQuery(api.cards.listByBoard, queryArgs)
+  const archivedCards = useQuery(api.cards.listArchivedByBoard, queryArgs)
+  const boardLabels = useQuery(api.labels.listByBoard, queryArgs)
+  const cardLabelsList = useQuery(api.labels.listCardLabelsForBoard, queryArgs)
+  const boardMembers = useQuery(api.members.listByBoard, queryArgs)
+  const cardAssigneesList = useQuery(
+    api.assignees.listCardAssigneesForBoard,
+    queryArgs,
+  )
   const cardCommentsCountList = useQuery(
     api.comments.listCommentsCountForBoard,
-    { boardId: typedBoardId },
+    queryArgs,
   )
-  const currentUser = useQuery(api.users.currentUser)
-  const presenceViewers = useBoardPresence(board ? typedBoardId : null)
+  const currentUser = useQuery(
+    api.users.currentUser,
+    isAuthenticated ? {} : 'skip',
+  )
+  const presenceViewers = useBoardPresence(
+    isAuthenticated && board ? typedBoardId : null,
+  )
 
   // Local UI State
   const [isActivityMenuOpen, setIsActivityMenuOpen] = useState(false)
   const [listBeingDeleted, setListBeingDeleted] = useState<ListDoc | null>(null)
   const [activeCardId, setActiveCardId] = useState<Id<'cards'> | null>(null)
 
-  // Subscribed comments for active modal card
-  const activeCardComments = useQuery(
-    api.comments.listByCard,
-    activeCardId ? { cardId: activeCardId } : 'skip',
+  // Subscribed paginated comments for active modal card
+  const {
+    results: activeCardComments,
+    status: commentsStatus,
+    loadMore: loadMoreComments,
+    isLoading: isCommentsLoading,
+  } = usePaginatedQuery(
+    api.comments.listByCardPaginated,
+    isAuthenticated && activeCardId ? { cardId: activeCardId } : 'skip',
+    { initialNumItems: 15 },
+  )
+
+  // Subscribed activities for active modal card
+  const activeCardActivities = useQuery(
+    api.activity.listByCard,
+    isAuthenticated && activeCardId ? { cardId: activeCardId } : 'skip',
   )
 
   // List Mutations
@@ -321,16 +336,11 @@ function BoardPage() {
   })
   const deleteBoardMutation = useMutation(api.boards.remove)
 
-  if (
-    !isLoaded ||
-    board === undefined ||
-    lists === undefined ||
-    cards === undefined
-  ) {
+  if (isAuthLoading) {
     return <BoardSkeleton />
   }
 
-  if (!isSignedIn) {
+  if (!isAuthenticated) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center p-4">
         <Empty className="max-w-md border border-border bg-card">
@@ -350,6 +360,10 @@ function BoardPage() {
         </Empty>
       </div>
     )
+  }
+
+  if (board === undefined || lists === undefined || cards === undefined) {
+    return <BoardSkeleton />
   }
 
   if (board === null) {
@@ -693,8 +707,11 @@ function BoardPage() {
         cardLabels={activeCardLabels}
         boardMembers={boardMembers ?? []}
         cardAssignees={activeCardAssignees}
-        comments={activeCardComments ?? []}
-        activities={activities ?? []}
+        comments={activeCardComments}
+        activities={activeCardActivities ?? []}
+        commentsStatus={commentsStatus}
+        isCommentsLoading={isCommentsLoading}
+        onLoadMoreComments={loadMoreComments}
         currentUserId={currentUser?.tokenIdentifier}
         currentUserProfile={currentUserProfile}
         isOpen={Boolean(activeCard)}
@@ -722,7 +739,9 @@ function BoardPage() {
 
       {/* Board Menu / Activity Feed, Labels Palette & Archive Sheet */}
       <BoardMenuSheet
-        activities={activities ?? []}
+        boardId={typedBoardId}
+        boardTitle={board.name}
+        presence={presenceViewers ?? []}
         archivedCards={archivedCards ?? []}
         labels={boardLabels ?? []}
         isOwner={board.isOwner}
@@ -732,6 +751,7 @@ function BoardPage() {
         onCreateLabel={handleCreateLabel}
         onUpdateLabel={handleUpdateLabel}
         onRemoveLabel={handleRemoveLabel}
+        onDeleteBoard={handleDeleteBoard}
       />
     </div>
   )

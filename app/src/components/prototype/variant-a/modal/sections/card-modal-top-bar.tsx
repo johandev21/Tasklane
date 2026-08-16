@@ -27,7 +27,7 @@ export function CardModalTopBar({
     <div className="flex items-center justify-between gap-3 bg-card px-5 pt-3 pb-1 shrink-0 select-none">
       {/* Left: Trello-style List Switcher Dropdown Pill */}
       <div className="flex items-center gap-2 min-w-0">
-        <DropdownMenu modal={false}>
+        <DropdownMenu modal={true}>
           <DropdownMenuTrigger asChild>
             <button
               type="button"

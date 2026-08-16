@@ -257,7 +257,8 @@ export const ListColumn = memo(function ListColumn({
                   <span>Archive all cards</span>
                 </DropdownMenuItem>
                 <DropdownMenuItem
-                  className="text-destructive focus:text-destructive text-sm cursor-pointer"
+                  variant="destructive"
+                  className="text-sm cursor-pointer"
                   onClick={() => onDeleteList?.(list)}
                 >
                   <Trash2 className="mr-2 size-3.5" />

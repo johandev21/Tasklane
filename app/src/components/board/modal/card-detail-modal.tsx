@@ -48,6 +48,10 @@ export interface CardDetailModalProps {
     body: string,
   ) => Promise<void> | void
   onDeleteComment?: (commentId: CommentDoc['_id']) => Promise<void> | void
+  commentsStatus?:
+    'CanLoadMore' | 'LoadingFirstPage' | 'LoadingMore' | 'Exhausted'
+  isCommentsLoading?: boolean
+  onLoadMoreComments?: (numItems: number) => void
 }
 
 export function CardDetailModal({
@@ -73,6 +77,9 @@ export function CardDetailModal({
   onAddComment,
   onUpdateComment,
   onDeleteComment,
+  commentsStatus,
+  isCommentsLoading,
+  onLoadMoreComments,
 }: CardDetailModalProps) {
   const isMobile = useIsMobile()
 
@@ -101,13 +108,16 @@ export function CardDetailModal({
       onAddComment={(body) => onAddComment?.(card._id, body)}
       onUpdateComment={(commentId, body) => onUpdateComment?.(commentId, body)}
       onDeleteComment={(commentId) => onDeleteComment?.(commentId)}
+      commentsStatus={commentsStatus}
+      isCommentsLoading={isCommentsLoading}
+      onLoadMoreComments={onLoadMoreComments}
     />
   )
 
   if (isMobile) {
     return (
       <Drawer open={isOpen} onOpenChange={(open) => !open && onClose()}>
-        <DrawerContent className="h-[90vh] max-h-[95vh] flex flex-col p-0 bg-card rounded-t-3xl overflow-hidden shadow-2xl">
+        <DrawerContent className="h-[90vh] max-h-[95vh] flex flex-col p-0 bg-card rounded-t-3xl overflow-hidden shadow-2xl border-none before:hidden">
           <DrawerHeader className="sr-only">
             <DrawerTitle>Card Details - {card.title}</DrawerTitle>
           </DrawerHeader>
@@ -123,7 +133,7 @@ export function CardDetailModal({
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent
         showCloseButton={false}
-        className="sm:max-w-3xl md:max-w-3xl max-w-3xl w-[min(94vw,760px)] h-[82vh] max-h-[85vh] flex flex-col p-0 bg-card rounded-2xl overflow-hidden shadow-2xl ring-1 ring-border/80"
+        className="sm:max-w-3xl md:max-w-3xl max-w-3xl w-[min(94vw,760px)] md:w-[min(90vw,780px)] lg:w-[min(85vw,820px)] h-[84vh] max-h-[88vh] flex flex-col p-0 bg-card rounded-2xl overflow-hidden shadow-2xl ring-1 ring-border/80"
       >
         <DialogHeader className="sr-only">
           <DialogTitle>Card Details - {card.title}</DialogTitle>

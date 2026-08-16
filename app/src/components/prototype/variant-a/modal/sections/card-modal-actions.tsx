@@ -67,7 +67,7 @@ export function CardModalActions({
         </h4>
 
         {/* Members / Assignees Popover */}
-        <Popover>
+        <Popover modal={true}>
           <PopoverTrigger asChild>
             <button
               type="button"
@@ -119,7 +119,7 @@ export function CardModalActions({
         </Popover>
 
         {/* Labels Popover */}
-        <Popover>
+        <Popover modal={true}>
           <PopoverTrigger asChild>
             <button
               type="button"
@@ -155,9 +155,6 @@ export function CardModalActions({
                     }`}
                   >
                     <div className="flex items-center gap-2 min-w-0">
-                      <span
-                        className={`size-2 rounded-full ${colorDef.dotClass} shrink-0`}
-                      />
                       <span className="truncate break-all">{lbl.name}</span>
                     </div>
                     {isSelected && (
@@ -171,7 +168,7 @@ export function CardModalActions({
         </Popover>
 
         {/* Dates Popover */}
-        <Popover>
+        <Popover modal={true}>
           <PopoverTrigger asChild>
             <button
               type="button"

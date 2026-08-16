@@ -2,7 +2,8 @@ import { useState } from 'react'
 import type { FormEvent } from 'react'
 import {
   KeyboardSensor,
-  PointerSensor,
+  MouseSensor,
+  TouchSensor,
   useSensor,
   useSensors,
 } from '@dnd-kit/core'
@@ -63,11 +64,17 @@ export function VariantA({ actions }: VariantAProps) {
   const [newListTitle, setNewListTitle] = useState('')
   const [deletingListId, setDeletingListId] = useState<string | null>(null)
 
-  // Configure sensors for drag & drop with activation constraint
+  // Configure sensors for drag & drop with activation constraint (Mouse & Touch)
   const sensors = useSensors(
-    useSensor(PointerSensor, {
+    useSensor(MouseSensor, {
       activationConstraint: {
-        distance: 5,
+        distance: 8,
+      },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 250,
+        tolerance: 6,
       },
     }),
     useSensor(KeyboardSensor, {

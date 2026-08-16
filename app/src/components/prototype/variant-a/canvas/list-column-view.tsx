@@ -183,7 +183,8 @@ export const ListColumnView = memo(function ListColumnView({
                   <span>Archive all cards</span>
                 </DropdownMenuItem>
                 <DropdownMenuItem
-                  className="text-destructive focus:text-destructive text-sm"
+                  variant="destructive"
+                  className="text-sm"
                   onClick={() => onDeleteList(list.id)}
                 >
                   <Trash2 className="mr-2 size-3.5" />

@@ -74,7 +74,7 @@ export function CardModalAddPopover({
   }
 
   return (
-    <Popover modal={false} open={isOpen} onOpenChange={setIsOpen}>
+    <Popover modal={true} open={isOpen} onOpenChange={setIsOpen}>
       <PopoverTrigger asChild>
         {trigger || (
           <Button
@@ -183,16 +183,13 @@ export function CardModalAddPopover({
                     key={lbl.id}
                     type="button"
                     onClick={() => onToggleLabel(lbl)}
-                    className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm transition-all text-left ${
+                    className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm transition-colors text-left ${
                       isSelected
-                        ? `${colorDef.badgeClass} font-semibold ring-1 ring-inset ring-foreground/25 shadow-xs`
+                        ? `border ${colorDef.badgeClass} font-semibold shadow-xs`
                         : 'hover:bg-muted/70 text-foreground border border-border/40'
                     }`}
                   >
                     <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                      <span
-                        className={`size-2.5 rounded-full ${colorDef.dotClass} shrink-0`}
-                      />
                       <span className="truncate break-all">{lbl.name}</span>
                     </div>
                     {isSelected && (

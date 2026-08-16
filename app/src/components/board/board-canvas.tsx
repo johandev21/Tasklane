@@ -7,7 +7,8 @@ import {
   pointerWithin,
   rectIntersection,
   MeasuringStrategy,
-  PointerSensor,
+  MouseSensor,
+  TouchSensor,
   KeyboardSensor,
   useSensor,
   useSensors,
@@ -90,9 +91,15 @@ export const BoardCanvas = memo(function BoardCanvas({
   }, [lists, cards, activeCardId, activeListId])
 
   const sensors = useSensors(
-    useSensor(PointerSensor, {
+    useSensor(MouseSensor, {
       activationConstraint: {
-        distance: 5,
+        distance: 8,
+      },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 250,
+        tolerance: 6,
       },
     }),
     useSensor(KeyboardSensor, {
@@ -126,6 +133,13 @@ export const BoardCanvas = memo(function BoardCanvas({
   }
 
   const handleDragStart = (event: DragStartEvent) => {
+    if (typeof window !== 'undefined' && 'vibrate' in navigator) {
+      try {
+        navigator.vibrate(40)
+      } catch {
+        // ignore if blocked by browser policy
+      }
+    }
     const { active } = event
     const activeData = active.data.current
     if (activeData?.type === 'card') {

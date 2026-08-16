@@ -69,7 +69,7 @@ export function CardModalDueDate({
       </span>
 
       <div className="flex items-center gap-2 flex-wrap">
-        <Popover open={isOpen} onOpenChange={setIsOpen}>
+        <Popover modal={true} open={isOpen} onOpenChange={setIsOpen}>
           <PopoverTrigger asChild>
             {dueDate ? (
               <button

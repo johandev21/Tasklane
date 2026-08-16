@@ -66,7 +66,7 @@ export function CardDetailModal({
   if (isMobile) {
     return (
       <Drawer open={isOpen} onOpenChange={(open) => !open && onClose()}>
-        <DrawerContent className="h-[92vh] max-h-[95vh] flex flex-col p-0 bg-card rounded-t-3xl overflow-hidden shadow-2xl">
+        <DrawerContent className="h-[92vh] max-h-[95vh] flex flex-col p-0 bg-card rounded-t-3xl overflow-hidden shadow-2xl border-none before:hidden">
           <DrawerHeader className="sr-only">
             <DrawerTitle>Card Details</DrawerTitle>
           </DrawerHeader>

@@ -22,9 +22,9 @@ export function DashboardSkeleton() {
 
       {/* Grid Skeleton */}
       <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
-        <Skeleton className="h-44 w-full rounded-2xl" />
-        <Skeleton className="h-44 w-full rounded-2xl" />
-        <Skeleton className="h-44 w-full rounded-2xl" />
+        <Skeleton className="h-36 w-full rounded-2xl" />
+        <Skeleton className="h-36 w-full rounded-2xl" />
+        <Skeleton className="h-36 w-full rounded-2xl" />
       </div>
     </div>
   )

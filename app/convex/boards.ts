@@ -133,9 +133,7 @@ export const get = query({
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity()
     if (!identity) {
-      throw new Error(
-        'Unauthenticated: cannot view board without valid session',
-      )
+      return null
     }
 
     const board = await ctx.db.get(args.boardId)

@@ -59,7 +59,7 @@ export function LabelPaletteManager({
   return (
     <div className="flex flex-col gap-4">
       {/* Header with Palette Count */}
-      <div className="flex items-center justify-between gap-2 border-b border-border/40 pb-2.5">
+      <div className="flex items-center justify-between gap-2 pb-2.5">
         <div className="flex items-center gap-2">
           <Palette className="size-4 text-primary" />
           <h3 className="font-heading text-sm font-semibold text-foreground">
@@ -146,9 +146,6 @@ export function LabelPaletteManager({
               className={`flex items-center justify-between gap-2 p-2.5 rounded-xl border ${colorDef.borderClass} ${colorDef.bgClass} transition-all`}
             >
               <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                <span
-                  className={`size-2.5 rounded-full ${colorDef.dotClass} shrink-0`}
-                />
                 <span
                   className={`text-sm font-semibold ${colorDef.textClass} break-all truncate`}
                 >

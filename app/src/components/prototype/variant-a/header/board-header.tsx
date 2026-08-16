@@ -63,12 +63,12 @@ export function BoardHeader({
         <Breadcrumb className="flex items-center text-sm min-w-0">
           <BreadcrumbList className="flex items-center text-sm">
             <BreadcrumbSeparator />
-            <BreadcrumbItem className="hidden sm:inline-flex">
+            <BreadcrumbItem className="hidden md:inline-flex">
               <BreadcrumbLink asChild>
-                <Link to="/home">Boards</Link>
+                <Link to="/prototype/board">Boards</Link>
               </BreadcrumbLink>
             </BreadcrumbItem>
-            <BreadcrumbSeparator className="hidden sm:inline-flex" />
+            <BreadcrumbSeparator className="hidden md:inline-flex" />
             <BreadcrumbItem className="min-w-0">
               {isOwner && isEditingTitle ? (
                 <input
@@ -83,7 +83,7 @@ export function BoardHeader({
                       setIsEditingTitle(false)
                     }
                   }}
-                  className="w-full max-w-xs sm:max-w-sm rounded-md border border-ring bg-background px-2 py-0.5 font-heading text-sm font-semibold text-foreground outline-none break-all"
+                  className="w-full max-w-[130px] xs:max-w-[180px] sm:max-w-xs md:max-w-sm rounded-md border border-ring bg-background px-2 py-0.5 font-heading text-sm font-semibold text-foreground outline-none"
                 />
               ) : (
                 <BreadcrumbPage
@@ -104,14 +104,14 @@ export function BoardHeader({
       </div>
 
       {/* Right Side: Presence Strip + Minimal Delete Board + Theme Mode Toggle */}
-      <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+      <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
         {/* Presence Strip */}
-        <div className="flex items-center gap-1">
+        <div className="hidden sm:flex items-center gap-1">
           <div className="flex -space-x-1.5 overflow-hidden py-1">
-            {visibleMembers.map((m) => (
+            {visibleMembers.map((m, idx) => (
               <div
                 key={m.id}
-                className="relative rounded-full ring-2 ring-card"
+                className={`relative rounded-full ring-2 ring-card ${idx >= 2 ? 'hidden lg:block' : ''}`}
                 title={`${m.name} (Viewing now)`}
               >
                 <img
@@ -123,15 +123,23 @@ export function BoardHeader({
               </div>
             ))}
 
-            {overflowMembers.length > 0 && (
+            {activeMembers.length > 2 && (
               <Popover modal={false}>
                 <PopoverTrigger asChild>
                   <button
                     type="button"
                     className="flex size-7 items-center justify-center rounded-full bg-muted text-xs font-semibold text-muted-foreground ring-2 ring-card transition-all hover:bg-muted/80 hover:text-foreground"
-                    title={`+${overflowMembers.length} more viewers`}
+                    title={`+${activeMembers.length} more viewers`}
                   >
-                    +{overflowMembers.length}
+                    <span className="lg:hidden">
+                      +{activeMembers.length - 2}
+                    </span>
+                    <span className="hidden lg:inline">
+                      +
+                      {overflowMembers.length > 0
+                        ? overflowMembers.length
+                        : activeMembers.length}
+                    </span>
                   </button>
                 </PopoverTrigger>
                 <PopoverContent
@@ -170,17 +178,19 @@ export function BoardHeader({
             variant="ghost"
             size="icon-xs"
             onClick={onOpenDeleteBoard}
-            className="size-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
+            className="hidden lg:inline-flex size-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
             title="Delete board"
           >
             <Trash2 className="size-4" />
           </Button>
         )}
 
-        <div className="h-4 w-px bg-border/60 hidden sm:block" />
+        <div className="h-4 w-px bg-border/60 hidden md:block" />
 
         {/* Theme Toggle */}
-        <ModeToggle />
+        <div className="hidden md:inline-flex">
+          <ModeToggle />
+        </div>
       </div>
     </div>
   )

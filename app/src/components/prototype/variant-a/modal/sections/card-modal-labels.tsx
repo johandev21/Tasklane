@@ -35,15 +35,12 @@ export function CardModalLabels({
               key={lbl.id}
               type="button"
               onClick={() => onToggleLabel(lbl)}
-              className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-sm font-medium transition-all max-w-full text-left ${
+              className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-sm font-medium transition-colors max-w-full text-left ${
                 isSelected
-                  ? `${colorDef.badgeClass} ring-1 ring-ring font-semibold`
+                  ? `${colorDef.badgeClass} font-semibold`
                   : 'border-border bg-card text-muted-foreground hover:text-foreground opacity-60'
               }`}
             >
-              <span
-                className={`size-2 rounded-full ${colorDef.dotClass} shrink-0`}
-              />
               <span className="break-all">{lbl.name}</span>
               {isSelected && <Check className="size-3 shrink-0 ml-1" />}
             </button>

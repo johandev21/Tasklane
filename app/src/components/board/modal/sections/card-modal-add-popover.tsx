@@ -62,7 +62,7 @@ export function CardModalAddPopover({
   })
 
   return (
-    <Popover open={isOpen} onOpenChange={handleOpenChange}>
+    <Popover modal={true} open={isOpen} onOpenChange={handleOpenChange}>
       <PopoverTrigger asChild>
         {trigger || (
           <Button
@@ -153,16 +153,13 @@ export function CardModalAddPopover({
                     key={lbl._id}
                     type="button"
                     onClick={() => onToggleLabel(lbl)}
-                    className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm transition-all text-left cursor-pointer ${
+                    className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm transition-colors text-left cursor-pointer ${
                       isSelected
-                        ? `${colorDef.badgeClass} font-semibold ring-1 ring-inset ring-foreground/25 shadow-2xs`
+                        ? `border ${colorDef.badgeClass} font-semibold shadow-2xs`
                         : 'hover:bg-muted/70 text-foreground border border-border/40'
                     }`}
                   >
                     <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                      <span
-                        className={`size-2.5 rounded-full ${colorDef.dotClass} shrink-0`}
-                      />
                       <span className="truncate break-all">{lbl.name}</span>
                     </div>
                     {isSelected && (
@@ -218,9 +215,9 @@ export function CardModalAddPopover({
                     key={member.userId}
                     type="button"
                     onClick={() => onToggleAssignee?.(member.userId)}
-                    className={`flex items-center justify-between rounded-lg px-2.5 py-2 text-xs transition-all text-left cursor-pointer ${
+                    className={`flex items-center justify-between rounded-lg px-2.5 py-2 text-xs transition-colors text-left cursor-pointer ${
                       isAssigned
-                        ? 'border border-primary/50 bg-primary/10 text-primary font-medium ring-1 ring-primary/20'
+                        ? 'border border-primary/50 bg-primary/10 text-primary font-medium shadow-2xs'
                         : 'border border-transparent bg-transparent text-foreground hover:bg-muted/70'
                     }`}
                   >

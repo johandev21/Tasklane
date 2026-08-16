@@ -32,9 +32,9 @@ export function CardModalAssignees({
               key={member.id}
               type="button"
               onClick={() => onToggleAssignee(member.id)}
-              className={`flex items-center justify-between rounded-xl border p-2 text-sm transition-all text-left ${
+              className={`flex items-center justify-between rounded-xl border p-2 text-sm transition-colors text-left ${
                 isAssigned
-                  ? 'border-primary/50 bg-primary/10 text-primary font-medium ring-1 ring-primary/20'
+                  ? 'border-primary/50 bg-primary/10 text-primary font-medium'
                   : 'border-border bg-card text-muted-foreground hover:text-foreground hover:bg-muted/40'
               }`}
             >

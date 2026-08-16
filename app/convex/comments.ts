@@ -1,7 +1,70 @@
+import { paginationOptsValidator } from 'convex/server'
 import { mutation, query } from './_generated/server'
 import { v } from 'convex/values'
 import { assertBoardAccess } from './auth_helpers'
 import type { Id } from './_generated/dataModel'
+
+/**
+ * Returns paginated comments for a card in reverse-chronological order (_creationTime descending),
+ * enriched with author profile details from the cached users table.
+ */
+export const listByCardPaginated = query({
+  args: {
+    cardId: v.id('cards'),
+    paginationOpts: paginationOptsValidator,
+  },
+  handler: async (ctx, args) => {
+    const card = await ctx.db.get(args.cardId)
+    if (!card) {
+      return {
+        page: [],
+        isDone: true,
+        continueCursor: '',
+      }
+    }
+
+    const { board } = await assertBoardAccess(ctx, card.boardId)
+
+    const paginated = await ctx.db
+      .query('comments')
+      .withIndex('by_cardId', (q) => q.eq('cardId', args.cardId))
+      .order('desc')
+      .paginate(args.paginationOpts)
+
+    const page = await Promise.all(
+      paginated.page.map(async (c) => {
+        const user = await ctx.db
+          .query('users')
+          .withIndex('by_tokenIdentifier', (q) =>
+            q.eq('tokenIdentifier', c.authorId),
+          )
+          .first()
+
+        const isOwner = c.authorId === board.ownerId
+
+        return {
+          _id: c._id,
+          _creationTime: c._creationTime,
+          cardId: c.cardId,
+          authorId: c.authorId,
+          body: c.body,
+          author: {
+            userId: c.authorId,
+            name: user?.name ?? (isOwner ? 'Board Owner' : 'Team Member'),
+            email: user?.email ?? '',
+            imageUrl: user?.imageUrl,
+            isOwner,
+          },
+        }
+      }),
+    )
+
+    return {
+      ...paginated,
+      page,
+    }
+  },
+})
 
 /**
  * Returns all comments for a card in chronological order (_creationTime ascending),

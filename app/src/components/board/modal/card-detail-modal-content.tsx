@@ -41,6 +41,10 @@ export interface CardDetailModalContentProps {
     body: string,
   ) => Promise<void> | void
   onDeleteComment?: (commentId: CommentDoc['_id']) => Promise<void> | void
+  commentsStatus?:
+    'CanLoadMore' | 'LoadingFirstPage' | 'LoadingMore' | 'Exhausted'
+  isCommentsLoading?: boolean
+  onLoadMoreComments?: (numItems: number) => void
 }
 
 export function CardDetailModalContent({
@@ -65,6 +69,9 @@ export function CardDetailModalContent({
   onAddComment,
   onUpdateComment,
   onDeleteComment,
+  commentsStatus,
+  isCommentsLoading,
+  onLoadMoreComments,
 }: CardDetailModalContentProps) {
   const currentList = lists.find((l) => l._id === card.listId)
 
@@ -131,7 +138,7 @@ export function CardDetailModalContent({
         </div>
 
         {/* Comments & Activity Feed Section */}
-        <div className="pt-2 border-t border-border/40">
+        <div className="pt-2">
           <CardModalComments
             cardId={card._id}
             cardTitle={card.title}
@@ -144,6 +151,9 @@ export function CardDetailModalContent({
               onUpdateComment?.(commentId, body)
             }
             onDeleteComment={(commentId) => onDeleteComment?.(commentId)}
+            commentsStatus={commentsStatus}
+            isCommentsLoading={isCommentsLoading}
+            onLoadMoreComments={onLoadMoreComments}
           />
         </div>
       </div>

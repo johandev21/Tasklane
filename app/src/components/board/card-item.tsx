@@ -122,7 +122,7 @@ export const CardItem = memo(function CardItem({
           onCardClick?.(card)
         }
       }}
-      className={`group relative rounded-xl border border-border/80 bg-card p-3 shadow-2xs transition-all duration-150 flex flex-col gap-2 ${
+      className={`group relative rounded-xl border border-border/80 bg-card p-3 shadow-2xs transition-all duration-150 flex flex-col gap-2 touch-manipulation select-none ${
         isDraggingOverlay
           ? 'ring-2 ring-primary/40 shadow-2xl scale-[1.02] cursor-grabbing'
           : 'hover:border-border hover:shadow-md hover:-translate-y-0.5 cursor-pointer'
@@ -315,8 +315,9 @@ export const CardItem = memo(function CardItem({
                 <DropdownMenuSeparator />
                 {onArchiveCard && (
                   <DropdownMenuItem
+                    variant="destructive"
                     onClick={() => onArchiveCard(card._id)}
-                    className="text-xs text-destructive focus:text-destructive cursor-pointer"
+                    className="text-xs cursor-pointer"
                   >
                     <Archive className="mr-2 size-3.5" />
                     <span>Archive card</span>

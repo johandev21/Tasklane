@@ -339,4 +339,73 @@ describe('comments', () => {
     expect(card2Count).toBe(1)
     expect(card3Count).toBeUndefined()
   })
+
+  it('paginates comments in reverse chronological order with enrichment', async () => {
+    const t = convexTest(schema, import.meta.glob('./**/*.*s'))
+    const asAlice = t.withIdentity({ tokenIdentifier: 'clerk|user_alice' })
+
+    await asAlice.mutation(api.users.upsertUser, {
+      name: 'Alice Wonderland',
+      email: 'alice@example.com',
+      imageUrl: 'https://example.com/alice.png',
+    })
+
+    const boardId = await asAlice.mutation(api.boards.create, {
+      name: 'Pagination Board',
+    })
+    const listId = await asAlice.mutation(api.lists.create, {
+      boardId,
+      title: 'Backlog',
+    })
+    const cardId = await asAlice.mutation(api.cards.create, {
+      listId,
+      title: 'Paginated Card',
+    })
+
+    // Add 5 comments
+    const ids: string[] = []
+    for (let i = 1; i <= 5; i++) {
+      const id = await asAlice.mutation(api.comments.add, {
+        cardId,
+        body: `Comment ${i}`,
+      })
+      ids.push(id)
+    }
+
+    // Page 1: 2 items
+    const page1 = await asAlice.query(api.comments.listByCardPaginated, {
+      cardId,
+      paginationOpts: { numItems: 2, cursor: null },
+    })
+
+    expect(page1.page).toHaveLength(2)
+    expect(page1.isDone).toBe(false)
+    expect(page1.page[0]._id).toBe(ids[4]) // Newest first
+    expect(page1.page[0].body).toBe('Comment 5')
+    expect(page1.page[0].author.name).toBe('Alice Wonderland')
+    expect(page1.page[1]._id).toBe(ids[3])
+    expect(page1.page[1].body).toBe('Comment 4')
+
+    // Page 2: next 2 items
+    const page2 = await asAlice.query(api.comments.listByCardPaginated, {
+      cardId,
+      paginationOpts: { numItems: 2, cursor: page1.continueCursor },
+    })
+
+    expect(page2.page).toHaveLength(2)
+    expect(page2.isDone).toBe(false)
+    expect(page2.page[0]._id).toBe(ids[2])
+    expect(page2.page[1]._id).toBe(ids[1])
+
+    // Page 3: last 1 item
+    const page3 = await asAlice.query(api.comments.listByCardPaginated, {
+      cardId,
+      paginationOpts: { numItems: 2, cursor: page2.continueCursor },
+    })
+
+    expect(page3.page).toHaveLength(1)
+    expect(page3.isDone).toBe(true)
+    expect(page3.page[0]._id).toBe(ids[0])
+    expect(page3.page[0].body).toBe('Comment 1')
+  })
 })

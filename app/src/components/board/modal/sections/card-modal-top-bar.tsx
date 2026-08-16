@@ -24,10 +24,10 @@ export function CardModalTopBar({
   onClose,
 }: CardModalTopBarProps) {
   return (
-    <div className="flex items-center justify-between gap-3 bg-card px-5 pt-3 pb-2 shrink-0 select-none border-b border-border/40">
+    <div className="flex items-center justify-between gap-3 bg-card px-5 pt-3 pb-2 shrink-0 select-none">
       {/* Left: List Switcher Dropdown */}
       <div className="flex items-center gap-2 min-w-0">
-        <DropdownMenu modal={false}>
+        <DropdownMenu modal={true}>
           <DropdownMenuTrigger asChild>
             <button
               type="button"

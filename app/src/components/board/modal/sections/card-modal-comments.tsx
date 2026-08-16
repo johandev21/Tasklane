@@ -1,8 +1,9 @@
 import { useState, useMemo } from 'react'
 import type { FormEvent, KeyboardEvent } from 'react'
-import { MessageSquare, Edit2, Trash2 } from 'lucide-react'
+import { MessageSquare, Edit2, Trash2, Loader2 } from 'lucide-react'
 import { Button } from '#/components/ui/button.tsx'
 import { Avatar, AvatarFallback, AvatarImage } from '#/components/ui/avatar.tsx'
+import { useInfiniteScroll } from '#/hooks/use-infinite-scroll.ts'
 import type {
   BoardMemberUser,
   CardDoc,
@@ -24,6 +25,10 @@ export interface CardModalCommentsProps {
     body: string,
   ) => Promise<void> | void
   onDeleteComment: (commentId: CommentDoc['_id']) => Promise<void> | void
+  commentsStatus?:
+    'CanLoadMore' | 'LoadingFirstPage' | 'LoadingMore' | 'Exhausted'
+  isCommentsLoading?: boolean
+  onLoadMoreComments?: (numItems: number) => void
 }
 
 function getInitials(name: string): string {
@@ -102,11 +107,21 @@ export function CardModalComments({
   onAddComment,
   onUpdateComment,
   onDeleteComment,
+  commentsStatus,
+  isCommentsLoading,
+  onLoadMoreComments,
 }: CardModalCommentsProps) {
   const [composerText, setComposerText] = useState('')
   const [isComposerFocused, setIsComposerFocused] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [showDetails, setShowDetails] = useState(true)
+
+  const { sentinelRef } = useInfiniteScroll({
+    onLoadMore: () => onLoadMoreComments?.(15),
+    canLoadMore: commentsStatus === 'CanLoadMore',
+    isLoading: Boolean(isCommentsLoading),
+    disabled: !onLoadMoreComments,
+  })
 
   const [editingCommentId, setEditingCommentId] = useState<
     CommentDoc['_id'] | null
@@ -248,7 +263,7 @@ export function CardModalComments({
                 value={composerText}
                 onChange={(e) => setComposerText(e.target.value)}
                 onKeyDown={handleComposerKeyDown}
-                className="w-full resize-none bg-transparent text-sm leading-relaxed text-foreground placeholder:text-muted-foreground focus:outline-none break-words"
+                className="w-full resize-none bg-transparent text-sm leading-relaxed text-foreground placeholder:text-muted-foreground focus:outline-none wrap-break-word"
               />
               <div className="flex items-center justify-between pt-1">
                 <div className="flex items-center gap-2">
@@ -421,9 +436,56 @@ export function CardModalComments({
           )
         })}
 
-        {feedItems.length === 0 && (
+        {commentsStatus === 'LoadingFirstPage' && comments.length === 0 && (
+          <div className="flex flex-col gap-3 py-2 animate-pulse">
+            <div className="flex items-start gap-3">
+              <div className="size-7 rounded-full bg-muted shrink-0" />
+              <div className="flex-1 flex flex-col gap-2">
+                <div className="h-3 w-24 rounded bg-muted" />
+                <div className="h-12 w-full rounded-xl bg-muted/60" />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {feedItems.length === 0 && commentsStatus !== 'LoadingFirstPage' && (
           <p className="text-xs sm:text-sm text-muted-foreground py-4 text-center italic">
             No comments or activity yet on this card.
+          </p>
+        )}
+
+        {/* Loading More Spinner */}
+        {commentsStatus === 'LoadingMore' && (
+          <div className="flex items-center justify-center py-2 text-xs text-muted-foreground gap-2">
+            <Loader2 className="size-3.5 animate-spin text-primary" />
+            <span>Loading older comments...</span>
+          </div>
+        )}
+
+        {/* Infinite Scroll Sentinel */}
+        {commentsStatus === 'CanLoadMore' && (
+          <div ref={sentinelRef} className="h-2 w-full" />
+        )}
+
+        {/* Fallback Load More Button */}
+        {commentsStatus === 'CanLoadMore' && (
+          <div className="flex justify-center pt-1">
+            <Button
+              type="button"
+              variant="ghost"
+              size="xs"
+              onClick={() => onLoadMoreComments?.(15)}
+              className="text-xs text-muted-foreground hover:text-foreground h-7 px-3 cursor-pointer"
+            >
+              Load older comments
+            </Button>
+          </div>
+        )}
+
+        {/* Exhausted State Indicator */}
+        {commentsStatus === 'Exhausted' && comments.length >= 10 && (
+          <p className="text-[11px] text-muted-foreground/60 py-2 text-center font-mono">
+            No older comments
           </p>
         )}
       </div>

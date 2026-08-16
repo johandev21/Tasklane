@@ -172,4 +172,107 @@ describe('activity', () => {
     expect(feedB.every((a) => a.type === 'board_created')).toBe(true)
     expect(feedB).toHaveLength(1)
   })
+
+  it('paginates board activities in reverse chronological order with enrichment', async () => {
+    const t = convexTest(schema, import.meta.glob('./**/*.*s'))
+    const asAlice = t.withIdentity({ tokenIdentifier: 'clerk|user_alice' })
+
+    await asAlice.mutation(api.users.upsertUser, {
+      name: 'Alice Activity',
+      email: 'alice@activity.com',
+      imageUrl: 'https://example.com/alice.png',
+    })
+
+    const boardId = await asAlice.mutation(api.boards.create, {
+      name: 'Activity Board',
+    })
+    const listId = await asAlice.mutation(api.lists.create, {
+      boardId,
+      title: 'List 1',
+    })
+    const cardId = await asAlice.mutation(api.cards.create, {
+      listId,
+      title: 'Card 1',
+    })
+    await asAlice.mutation(api.comments.add, {
+      cardId,
+      body: 'Comment 1',
+    })
+
+    // Total activities: board_created, list_created, card_created, comment_added = 4 events
+
+    // Page 1: 2 items
+    const page1 = await asAlice.query(api.activity.listPaginated, {
+      boardId,
+      paginationOpts: { numItems: 2, cursor: null },
+    })
+
+    expect(page1.page).toHaveLength(2)
+    expect(page1.isDone).toBe(false)
+    expect(page1.page[0].type).toBe('comment_added')
+    expect(page1.page[0].actor.name).toBe('Alice Activity')
+    expect(page1.page[1].type).toBe('card_created')
+
+    // Page 2: remaining 2 items
+    const page2 = await asAlice.query(api.activity.listPaginated, {
+      boardId,
+      paginationOpts: { numItems: 2, cursor: page1.continueCursor },
+    })
+
+    expect(page2.page).toHaveLength(2)
+    expect(page2.isDone).toBe(true)
+    expect(page2.page[0].type).toBe('list_created')
+    expect(page2.page[1].type).toBe('board_created')
+  })
+
+  it('filters activity specifically for a single card', async () => {
+    const t = convexTest(schema, import.meta.glob('./**/*.*s'))
+    const asAlice = t.withIdentity({ tokenIdentifier: 'clerk|user_alice' })
+
+    await asAlice.mutation(api.users.upsertUser, {
+      name: 'Alice Card Tester',
+      email: 'alice@tester.com',
+    })
+
+    const boardId = await asAlice.mutation(api.boards.create, {
+      name: 'Card Activity Board',
+    })
+    const listId = await asAlice.mutation(api.lists.create, {
+      boardId,
+      title: 'Backlog',
+    })
+    const card1 = await asAlice.mutation(api.cards.create, {
+      listId,
+      title: 'Card 1',
+    })
+    const card2 = await asAlice.mutation(api.cards.create, {
+      listId,
+      title: 'Card 2',
+    })
+
+    await asAlice.mutation(api.cards.updateDescription, {
+      cardId: card1,
+      description: 'New description for card 1',
+    })
+    await asAlice.mutation(api.comments.add, {
+      cardId: card2,
+      body: 'Comment on card 2',
+    })
+
+    const card1Activities = await asAlice.query(api.activity.listByCard, {
+      cardId: card1,
+    })
+
+    // Should include description_changed and card_created for card1, but not board/list or card2 events
+    const card1Types = card1Activities.map((a) => a.type)
+    expect(card1Types).toContain('description_changed')
+    expect(card1Types).toContain('card_created')
+    expect(card1Types).not.toContain('board_created')
+    expect(card1Types).not.toContain('list_created')
+    expect(
+      card1Activities.every(
+        (a) => a.payload.cardId === card1 || a.payload.title === 'Card 1',
+      ),
+    ).toBe(true)
+  })
 })
