@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
 import { UserButton, useAuth, useUser } from '@clerk/tanstack-react-start'
 import { useMutation, useQuery } from 'convex/react'
+import { toast } from 'sonner'
 import { api } from '../../convex/_generated/api'
 
 import { Button } from '#/components/ui/button.tsx'
@@ -25,8 +26,10 @@ import { TelemetryStrip } from '#/components/dashboard/telemetry-strip.tsx'
 import { BoardCard } from '#/components/dashboard/board-card.tsx'
 import { CreateBoardDialog } from '#/components/dashboard/create-board-dialog.tsx'
 import { DashboardSkeleton } from '#/components/dashboard/dashboard-skeleton.tsx'
+import { AppError } from '#/components/ui/app-error.tsx'
 
 export const Route = createFileRoute('/home')({
+  errorComponent: AppError,
   component: HomePage,
 })
 
@@ -57,8 +60,17 @@ function HomePage() {
   }, [isLoaded, user, upsertUser])
 
   const handleCreateBoard = async (name: string) => {
-    const boardId = await createBoardMutation({ name })
-    navigate({ to: '/boards/$boardId', params: { boardId } })
+    try {
+      const boardId = await createBoardMutation({ name })
+      await navigate({ to: '/boards/$boardId', params: { boardId } })
+    } catch (err) {
+      console.error('Failed to create board:', err)
+      toast.error(
+        err instanceof Error
+          ? err.message
+          : 'Failed to create board. Please try again.',
+      )
+    }
   }
 
   if (isLoaded && !isSignedIn) {
@@ -201,12 +213,48 @@ function HomePage() {
                 </Button>
               </div>
 
-              {/* Boards Workload Grid */}
-              <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
-                {displayedBoards.map((board) => (
-                  <BoardCard key={board._id} board={board} />
-                ))}
-              </div>
+              {/* Boards Workload Grid or Filter Empty State */}
+              {displayedBoards.length === 0 ? (
+                <div className="py-8">
+                  <Empty className="mx-auto max-w-md border border-border/80 bg-card/60 p-8 shadow-xs">
+                    <EmptyHeader>
+                      <EmptyTitle>
+                        {filterMode === 'owned'
+                          ? 'No owned boards'
+                          : 'No shared boards'}
+                      </EmptyTitle>
+                      <EmptyDescription>
+                        {filterMode === 'owned'
+                          ? 'You do not own any boards yet. Create a board or switch to view shared boards.'
+                          : 'No boards have been shared with you yet.'}
+                      </EmptyDescription>
+                    </EmptyHeader>
+                    <EmptyContent className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setFilterMode('all')}
+                      >
+                        Show All Boards
+                      </Button>
+                      {filterMode === 'owned' && (
+                        <Button
+                          size="sm"
+                          onClick={() => setCreateDialogOpen(true)}
+                        >
+                          Create Board
+                        </Button>
+                      )}
+                    </EmptyContent>
+                  </Empty>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
+                  {displayedBoards.map((board) => (
+                    <BoardCard key={board._id} board={board} />
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </div>

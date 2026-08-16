@@ -26,6 +26,7 @@ import { BoardCanvas } from '#/components/board/board-canvas.tsx'
 import { DeleteListDialog } from '#/components/board/delete-list-dialog.tsx'
 import { BoardMenuSheet } from '#/components/board/board-menu-sheet.tsx'
 import { BoardSkeleton } from '#/components/board/board-skeleton.tsx'
+import { AppError } from '#/components/ui/app-error.tsx'
 import type {
   BoardMemberUser,
   CommentDoc,
@@ -35,6 +36,7 @@ import type {
 } from '#/components/board/types.ts'
 
 export const Route = createFileRoute('/boards/$boardId')({
+  errorComponent: AppError,
   component: BoardPage,
 })
 
@@ -416,76 +418,140 @@ function BoardPage() {
   }
 
   const handleAddList = async (title: string) => {
-    await createListMutation({
-      boardId: typedBoardId,
-      title,
-    })
+    try {
+      await createListMutation({
+        boardId: typedBoardId,
+        title,
+      })
+    } catch (err) {
+      console.error('Failed to create list:', err)
+      toast.error(
+        err instanceof Error
+          ? err.message
+          : 'Failed to create list. Please try again.',
+      )
+      throw err
+    }
   }
 
   const handleRenameList = async (listId: ListDoc['_id'], newTitle: string) => {
-    await renameListMutation({
-      listId,
-      title: newTitle,
-    })
+    try {
+      await renameListMutation({
+        listId,
+        title: newTitle,
+      })
+    } catch (err) {
+      console.error('Failed to rename list:', err)
+      toast.error('Failed to rename list. Changes were reverted.')
+    }
   }
 
   const handleDeleteListConfirm = async () => {
     if (listBeingDeleted) {
-      await deleteListMutation({
-        listId: listBeingDeleted._id,
-      })
-      setListBeingDeleted(null)
+      try {
+        await deleteListMutation({
+          listId: listBeingDeleted._id,
+        })
+        setListBeingDeleted(null)
+        toast.success('List deleted')
+      } catch (err) {
+        console.error('Failed to delete list:', err)
+        toast.error(
+          err instanceof Error ? err.message : 'Failed to delete list.',
+        )
+      }
     }
   }
 
   const handleArchiveAllCards = async (listId: ListDoc['_id']) => {
-    await archiveAllCardsMutation({
-      listId,
-    })
+    try {
+      await archiveAllCardsMutation({
+        listId,
+      })
+      toast.success('All cards in list archived')
+    } catch (err) {
+      console.error('Failed to archive cards:', err)
+      toast.error(
+        err instanceof Error ? err.message : 'Failed to archive cards in list.',
+      )
+    }
   }
 
   const handleAddCard = async (listId: ListDoc['_id'], title: string) => {
-    await createCardMutation({
-      listId,
-      title,
-    })
+    try {
+      await createCardMutation({
+        listId,
+        title,
+      })
+    } catch (err) {
+      console.error('Failed to create card:', err)
+      toast.error(err instanceof Error ? err.message : 'Failed to create card.')
+      throw err
+    }
   }
 
   const handleRenameCard = async (cardId: CardDoc['_id'], newTitle: string) => {
-    await renameCardMutation({
-      cardId,
-      title: newTitle,
-    })
+    try {
+      await renameCardMutation({
+        cardId,
+        title: newTitle,
+      })
+    } catch (err) {
+      console.error('Failed to rename card:', err)
+      toast.error('Failed to rename card. Changes were reverted.')
+    }
   }
 
   const handleUpdateDescription = async (
     cardId: CardDoc['_id'],
     description: string,
   ) => {
-    await updateCardDescriptionMutation({
-      cardId,
-      description: description || undefined,
-    })
+    try {
+      await updateCardDescriptionMutation({
+        cardId,
+        description: description || undefined,
+      })
+    } catch (err) {
+      console.error('Failed to update description:', err)
+      toast.error(
+        err instanceof Error ? err.message : 'Failed to update description.',
+      )
+      throw err
+    }
   }
 
   const handleUpdateDueDate = async (
     cardId: CardDoc['_id'],
     dueDate: number | undefined,
   ) => {
-    await updateCardDueDateMutation({
-      cardId,
-      dueDate,
-    })
+    try {
+      await updateCardDueDateMutation({
+        cardId,
+        dueDate,
+      })
+    } catch (err) {
+      console.error('Failed to update due date:', err)
+      toast.error(
+        err instanceof Error ? err.message : 'Failed to update due date.',
+      )
+    }
   }
 
   const handleMoveCardToList = async (
     cardId: CardDoc['_id'],
     targetListId: ListDoc['_id'],
   ) => {
-    await moveCardToListMutation({
-      cardId,
-      targetListId,
-    })
+    try {
+      await moveCardToListMutation({
+        cardId,
+        targetListId,
+      })
+    } catch (err) {
+      console.error('Failed to move card:', err)
+      toast.error(
+        err instanceof Error ? err.message : 'Failed to move card to list.',
+      )
+    }
   }
 
   const handleReorderList = async (
@@ -521,26 +587,60 @@ function BoardPage() {
   }
 
   const handleArchiveCard = async (cardId: CardDoc['_id']) => {
-    await archiveCardMutation({
-      cardId,
-    })
-    if (activeCardId === cardId) {
-      setActiveCardId(null)
+    try {
+      await archiveCardMutation({
+        cardId,
+      })
+      if (activeCardId === cardId) {
+        setActiveCardId(null)
+      }
+      toast('Card archived', {
+        action: {
+          label: 'Undo',
+          onClick: () => handleRestoreCard(cardId),
+        },
+      })
+    } catch (err) {
+      console.error('Failed to archive card:', err)
+      toast.error(
+        err instanceof Error ? err.message : 'Failed to archive card.',
+      )
     }
   }
 
   const handleRestoreCard = async (cardId: CardDoc['_id']) => {
-    await restoreCardMutation({
-      cardId,
-    })
+    try {
+      if (lists.length === 0) {
+        toast.error('Please create a list on the board before restoring cards.')
+        return
+      }
+      await restoreCardMutation({
+        cardId,
+      })
+      toast.success('Card restored to board')
+    } catch (err) {
+      console.error('Failed to restore card:', err)
+      toast.error(
+        err instanceof Error ? err.message : 'Failed to restore card.',
+      )
+    }
   }
 
   const handleCreateLabel = async (name: string, color: string) => {
-    await createLabelMutation({
-      boardId: typedBoardId,
-      name,
-      color,
-    })
+    try {
+      await createLabelMutation({
+        boardId: typedBoardId,
+        name,
+        color,
+      })
+      toast.success(`Created label "${name}"`)
+    } catch (err) {
+      console.error('Failed to create label:', err)
+      toast.error(
+        err instanceof Error ? err.message : 'Failed to create label.',
+      )
+      throw err
+    }
   }
 
   const handleUpdateLabel = async (
@@ -548,60 +648,118 @@ function BoardPage() {
     name?: string,
     color?: string,
   ) => {
-    await updateLabelMutation({
-      labelId,
-      name,
-      color,
-    })
+    try {
+      await updateLabelMutation({
+        labelId,
+        name,
+        color,
+      })
+      toast.success('Label updated')
+    } catch (err) {
+      console.error('Failed to update label:', err)
+      toast.error(
+        err instanceof Error ? err.message : 'Failed to update label.',
+      )
+      throw err
+    }
   }
 
   const handleRemoveLabel = async (labelId: LabelDoc['_id']) => {
-    await removeLabelMutation({
-      labelId,
-    })
+    try {
+      await removeLabelMutation({
+        labelId,
+      })
+      toast.success('Label removed from board')
+    } catch (err) {
+      console.error('Failed to remove label:', err)
+      toast.error(
+        err instanceof Error ? err.message : 'Failed to remove label.',
+      )
+      throw err
+    }
   }
 
   const handleToggleCardLabel = async (
     cardId: CardDoc['_id'],
     label: LabelDoc,
   ) => {
-    await toggleCardLabelMutation({
-      cardId,
-      labelId: label._id,
-    })
+    try {
+      await toggleCardLabelMutation({
+        cardId,
+        labelId: label._id,
+      })
+    } catch (err) {
+      console.error('Failed to toggle label:', err)
+      toast.error(
+        err instanceof Error ? err.message : 'Failed to toggle label on card.',
+      )
+    }
   }
 
   const handleToggleCardAssignee = async (
     cardId: CardDoc['_id'],
     userId: string,
   ) => {
-    await toggleCardAssigneeMutation({
-      cardId,
-      userId,
-    })
+    try {
+      await toggleCardAssigneeMutation({
+        cardId,
+        userId,
+      })
+    } catch (err) {
+      console.error('Failed to toggle assignee:', err)
+      toast.error(
+        err instanceof Error ? err.message : 'Failed to update card assignee.',
+      )
+    }
   }
 
   const handleAddComment = async (cardId: CardDoc['_id'], body: string) => {
-    await addCommentMutation({
-      cardId,
-      body,
-    })
+    try {
+      await addCommentMutation({
+        cardId,
+        body,
+      })
+    } catch (err) {
+      console.error('Failed to add comment:', err)
+      toast.error(
+        err instanceof Error ? err.message : 'Failed to post comment.',
+      )
+      throw err
+    }
   }
 
   const handleUpdateComment = async (
     commentId: CommentDoc['_id'],
     body: string,
   ) => {
-    await updateCommentMutation({
-      commentId,
-      body,
-    })
+    try {
+      await updateCommentMutation({
+        commentId,
+        body,
+      })
+      toast.success('Comment updated')
+    } catch (err) {
+      console.error('Failed to update comment:', err)
+      toast.error(
+        err instanceof Error ? err.message : 'Failed to update comment.',
+      )
+      throw err
+    }
   }
 
   const handleDeleteComment = async (commentId: CommentDoc['_id']) => {
-    await deleteCommentMutation({
-      commentId,
-    })
+    try {
+      await deleteCommentMutation({
+        commentId,
+      })
+      toast.success('Comment deleted')
+    } catch (err) {
+      console.error('Failed to delete comment:', err)
+      toast.error(
+        err instanceof Error ? err.message : 'Failed to delete comment.',
+      )
+      throw err
+    }
   }
 
   const handleInviteMember = async (email: string) => {

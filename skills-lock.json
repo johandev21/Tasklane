@@ -79,11 +79,23 @@
       "skillPath": "skills/migrate-radix-to-base/SKILL.md",
       "computedHash": "4fdc31bf287f674ba6bf91a648120f7b34cd7ef370f998f2cc116fed067789c5"
     },
+    "missing-non-happy-states": {
+      "source": "johandev21/skills",
+      "sourceType": "github",
+      "skillPath": "skills/missing-non-happy-states/SKILL.md",
+      "computedHash": "26c60ce3e68287119861d0222e35820807d0a4cd6ea85ace71bfc29868fdbe29"
+    },
     "prototype": {
       "source": "mattpocock/skills",
       "sourceType": "github",
       "skillPath": "skills/engineering/prototype/SKILL.md",
       "computedHash": "08c1a6d45a79180f795368e0bbf9820df9017d9ad2f5e4f858315d57ad357606"
+    },
+    "readable-react": {
+      "source": "johandev21/skills",
+      "sourceType": "github",
+      "skillPath": "skills/readable-react/SKILL.md",
+      "computedHash": "f7fe827d2e9cc6141a7725372f0b1f488c97201803904cf5456b6c31ad44f6b3"
     },
     "research": {
       "source": "mattpocock/skills",

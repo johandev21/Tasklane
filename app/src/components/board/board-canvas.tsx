@@ -397,7 +397,11 @@ export const BoardCanvas = memo(function BoardCanvas({
               >
                 <Input
                   autoFocus
-                  placeholder="Enter list title..."
+                  placeholder={
+                    optimisticLists.length === 0
+                      ? 'e.g. To Do, In Progress, Done...'
+                      : 'Enter list title...'
+                  }
                   value={newListTitle}
                   onChange={(e) => setNewListTitle(e.target.value)}
                   className="text-sm break-all"
@@ -408,7 +412,7 @@ export const BoardCanvas = memo(function BoardCanvas({
                     type="submit"
                     disabled={!newListTitle.trim()}
                   >
-                    Add List
+                    {optimisticLists.length === 0 ? 'Create List' : 'Add List'}
                   </Button>
                   <Button
                     size="sm"
@@ -430,7 +434,11 @@ export const BoardCanvas = memo(function BoardCanvas({
                 className="flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-border/80 bg-muted/30 p-4 text-sm font-medium text-muted-foreground transition-all hover:border-border hover:bg-muted/60 hover:text-foreground cursor-pointer"
               >
                 <Plus className="size-4" />
-                <span>Add another list</span>
+                <span>
+                  {optimisticLists.length === 0
+                    ? 'Add your first list'
+                    : 'Add another list'}
+                </span>
               </button>
             )}
           </div>

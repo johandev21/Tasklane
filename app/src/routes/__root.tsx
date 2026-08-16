@@ -8,6 +8,10 @@ import { convex } from '../lib/convex'
 import appCss from '../styles.css?url'
 
 import { ThemeProvider } from '../components/theme-provider'
+import { Toaster } from '#/components/ui/sonner.tsx'
+import { AppError } from '#/components/ui/app-error.tsx'
+import { NotFound } from '#/components/ui/not-found.tsx'
+import { OfflineBanner } from '#/components/ui/offline-banner.tsx'
 
 export const Route = createRootRoute({
   head: () => ({
@@ -30,6 +34,8 @@ export const Route = createRootRoute({
       },
     ],
   }),
+  errorComponent: AppError,
+  notFoundComponent: NotFound,
   shellComponent: RootDocument,
 })
 
@@ -45,7 +51,9 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <ThemeProvider defaultTheme="system" storageKey="theme">
           <ClerkProvider publishableKey={publishableKey}>
             <ConvexProviderWithClerk client={convex} useAuth={useAuth}>
+              <OfflineBanner />
               {children}
+              <Toaster richColors closeButton position="bottom-right" />
             </ConvexProviderWithClerk>
           </ClerkProvider>
         </ThemeProvider>

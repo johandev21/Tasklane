@@ -8,13 +8,14 @@ import {
   List,
   Code,
   Link2,
+  Loader2,
 } from 'lucide-react'
 import { Button } from '#/components/ui/button.tsx'
 import { MarkdownRenderer } from '../markdown-renderer.tsx'
 
 export interface CardModalDescriptionProps {
   description: string
-  onSaveDescription: (desc: string) => void
+  onSaveDescription: (desc: string) => Promise<void> | void
 }
 
 export function CardModalDescription({
@@ -23,6 +24,8 @@ export function CardModalDescription({
 }: CardModalDescriptionProps) {
   const [desc, setDesc] = useState(description)
   const [isEditing, setIsEditing] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
   const [mode, setMode] = useState<'write' | 'preview'>('write')
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
@@ -30,14 +33,25 @@ export function CardModalDescription({
     setDesc(description)
   }, [description])
 
-  const handleSave = () => {
-    onSaveDescription(desc.trim())
-    setIsEditing(false)
-    setMode('write')
+  const handleSave = async () => {
+    setIsSaving(true)
+    setSaveError(null)
+    try {
+      await onSaveDescription(desc.trim())
+      setIsEditing(false)
+      setMode('write')
+    } catch (err) {
+      setSaveError(
+        err instanceof Error ? err.message : 'Failed to save description',
+      )
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   const handleCancel = () => {
     setDesc(description)
+    setSaveError(null)
     setIsEditing(false)
     setMode('write')
   }
@@ -183,7 +197,11 @@ export function CardModalDescription({
               rows={5}
               placeholder="Write markdown notes, checklist items, acceptance criteria..."
               value={desc}
-              onChange={(e) => setDesc(e.target.value)}
+              onChange={(e) => {
+                setDesc(e.target.value)
+                setSaveError(null)
+              }}
+              disabled={isSaving}
               className="w-full resize-y bg-transparent p-1 text-sm sm:text-base leading-relaxed text-foreground placeholder:text-muted-foreground focus:outline-none break-words"
               dir="auto"
             />
@@ -199,18 +217,31 @@ export function CardModalDescription({
             </div>
           )}
 
+          {saveError && (
+            <p className="text-xs text-destructive px-1">{saveError}</p>
+          )}
+
           {/* Action Buttons */}
           <div className="flex items-center gap-2 pt-1 border-t border-border/40">
             <Button
               size="sm"
               onClick={handleSave}
+              disabled={isSaving}
               className="text-xs sm:text-sm h-8 px-3 cursor-pointer"
             >
-              Save
+              {isSaving ? (
+                <>
+                  <Loader2 className="size-3.5 animate-spin mr-1.5" />
+                  Saving...
+                </>
+              ) : (
+                'Save'
+              )}
             </Button>
             <Button
               size="sm"
               variant="ghost"
+              disabled={isSaving}
               onClick={handleCancel}
               className="text-xs sm:text-sm h-8 px-3 cursor-pointer"
             >
