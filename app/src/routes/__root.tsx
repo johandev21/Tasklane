@@ -10,8 +10,13 @@ import appCss from '../styles.css?url'
 import { ThemeProvider } from '../components/theme-provider'
 import { Toaster } from '#/components/ui/sonner.tsx'
 import { AppError } from '#/components/ui/app-error.tsx'
+import type { AppErrorProps } from '#/components/ui/app-error.tsx'
 import { NotFound } from '#/components/ui/not-found.tsx'
 import { OfflineBanner } from '#/components/ui/offline-banner.tsx'
+
+function ErrorBoundary(props: AppErrorProps) {
+  return <AppError {...props} />
+}
 
 export const Route = createRootRoute({
   head: () => ({
@@ -26,6 +31,13 @@ export const Route = createRootRoute({
       {
         title: 'Tasklane — Realtime Collaborative Workspace',
       },
+      {
+        name: 'description',
+        content:
+          'Organize collaborative work through realtime boards, lists, and cards.',
+      },
+      { property: 'og:image', content: '/social-preview.svg' },
+      { name: 'twitter:image', content: '/social-preview.svg' },
     ],
     links: [
       {
@@ -34,7 +46,7 @@ export const Route = createRootRoute({
       },
     ],
   }),
-  errorComponent: AppError,
+  errorComponent: ErrorBoundary,
   notFoundComponent: NotFound,
   shellComponent: RootDocument,
 })
@@ -48,7 +60,11 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <HeadContent />
       </head>
       <body className="min-h-screen bg-app-background font-sans text-foreground antialiased selection:bg-primary/10">
-        <ThemeProvider defaultTheme="system" storageKey="theme">
+        <ThemeProvider
+          defaultTheme="system"
+          storageKey="theme"
+          attribute="class"
+        >
           <ClerkProvider publishableKey={publishableKey}>
             <ConvexProviderWithClerk client={convex} useAuth={useAuth}>
               <OfflineBanner />

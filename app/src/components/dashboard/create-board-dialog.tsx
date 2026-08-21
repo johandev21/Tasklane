@@ -77,9 +77,16 @@ export function CreateBoardDialog({
                   maxLength={100}
                   disabled={isSubmitting}
                   aria-invalid={errorMessage ? true : undefined}
+                  aria-describedby={
+                    errorMessage ? 'board-title-error' : undefined
+                  }
                 />
                 {errorMessage ? (
-                  <p className="mt-1 text-xs text-destructive">
+                  <p
+                    id="board-title-error"
+                    role="alert"
+                    className="mt-1 text-xs text-destructive"
+                  >
                     {errorMessage}
                   </p>
                 ) : null}

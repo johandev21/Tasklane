@@ -127,7 +127,7 @@ export function BoardMembersDialog({
                   onChange={(e) => setEmailInput(e.target.value)}
                   disabled={isInviting}
                   className="pl-8 text-xs h-9"
-                  autoComplete="off"
+                  autoComplete="email"
                 />
               </div>
               <Button

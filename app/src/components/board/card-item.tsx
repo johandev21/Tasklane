@@ -122,6 +122,14 @@ export const CardItem = memo(function CardItem({
           onCardClick?.(card)
         }
       }}
+      role="button"
+      tabIndex={!isEditing && !isDraggingOverlay ? 0 : -1}
+      onKeyDown={(event) => {
+        if ((event.key === 'Enter' || event.key === ' ') && !isEditing) {
+          event.preventDefault()
+          onCardClick?.(card)
+        }
+      }}
       className={`group relative rounded-xl border border-border/80 bg-card p-3 shadow-2xs transition-all duration-150 flex flex-col gap-2 touch-manipulation select-none ${
         isDraggingOverlay
           ? 'ring-2 ring-primary/40 shadow-2xl scale-[1.02] cursor-grabbing'
@@ -153,6 +161,7 @@ export const CardItem = memo(function CardItem({
           onPointerDown={(e) => e.stopPropagation()}
         >
           <textarea
+            aria-label={`Edit title for ${card.title}`}
             autoFocus
             rows={2}
             value={editTitle}

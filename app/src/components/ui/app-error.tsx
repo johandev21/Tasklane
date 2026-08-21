@@ -42,7 +42,7 @@ export function AppError({ error, reset }: AppErrorProps) {
         <EmptyHeader>
           <EmptyTitle>Something went wrong</EmptyTitle>
           <EmptyDescription className="text-xs sm:text-sm">
-            {errorMessage}
+            <span role="alert">{errorMessage}</span>
           </EmptyDescription>
         </EmptyHeader>
         <EmptyContent className="flex flex-row items-center justify-center gap-3">

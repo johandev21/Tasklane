@@ -63,6 +63,7 @@ export function ListComposer({
         className="rounded-xl border border-border/80 bg-card p-2.5 shadow-sm transition-all animate-in fade-in-50 duration-150"
       >
         <textarea
+          aria-label="New card title"
           ref={textareaRef}
           autoFocus
           rows={2}

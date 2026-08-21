@@ -102,6 +102,7 @@ export const ListColumnView = memo(function ListColumnView({
         <div className="flex flex-1 items-center min-w-0">
           {isEditingTitle ? (
             <input
+              aria-label={`Edit title for ${list.title}`}
               autoFocus
               value={titleValue}
               onChange={(e) => setTitleValue(e.target.value)}
@@ -115,7 +116,7 @@ export const ListColumnView = memo(function ListColumnView({
               }}
               onClick={(e) => e.stopPropagation()}
               onPointerDown={(e) => e.stopPropagation()}
-              className="w-full rounded-md border border-ring bg-background px-2 py-0.5 font-heading text-base font-semibold text-foreground outline-none break-all cursor-text"
+              className="w-full rounded-md border border-ring bg-background px-2 py-0.5 font-heading text-base font-semibold text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 break-all cursor-text"
             />
           ) : (
             <h2
@@ -149,6 +150,7 @@ export const ListColumnView = memo(function ListColumnView({
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
+                  aria-label={`Actions for ${list.title}`}
                   variant="ghost"
                   size="icon-xs"
                   className="text-muted-foreground hover:text-foreground opacity-70 group-hover/col:opacity-100 transition-opacity cursor-pointer"

@@ -51,7 +51,10 @@ export function DeleteBoardDialog({
                 memberships will be completely deleted.
               </p>
               <div className="space-y-1.5 rounded-lg border border-destructive/20 bg-destructive/5 p-3">
-                <label className="block text-sm font-semibold text-foreground">
+                <label
+                  htmlFor="delete-board-confirmation"
+                  className="block text-sm font-semibold text-foreground"
+                >
                   To confirm, type the board name{' '}
                   <span className="select-all font-mono font-bold text-destructive">
                     {boardTitle}
@@ -59,6 +62,8 @@ export function DeleteBoardDialog({
                   :
                 </label>
                 <Input
+                  id="delete-board-confirmation"
+                  aria-label="Type the board name to confirm deletion"
                   autoFocus
                   placeholder={boardTitle}
                   value={confirmInput}

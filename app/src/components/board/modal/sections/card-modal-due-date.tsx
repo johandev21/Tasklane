@@ -74,6 +74,7 @@ export function CardModalDueDate({
             {dueDate ? (
               <button
                 type="button"
+                aria-label="Close due date picker"
                 className={`inline-flex items-center gap-2 rounded-xl border px-3 py-1.5 text-sm font-medium transition-colors cursor-pointer ${
                   isOverdue
                     ? 'bg-red-500/15 border-red-300 dark:border-red-800/80 text-red-600 dark:text-red-400 hover:bg-red-500/25'
@@ -120,6 +121,7 @@ export function CardModalDueDate({
               </span>
               <button
                 type="button"
+                aria-label="Close due date editor"
                 onClick={() => setIsOpen(false)}
                 className="rounded p-1 text-muted-foreground hover:text-foreground cursor-pointer"
               >

@@ -7,6 +7,7 @@ type ThemeProviderProps = {
   children: React.ReactNode
   defaultTheme?: Theme
   storageKey?: string
+  attribute?: 'class'
 }
 
 type ThemeProviderState = {
@@ -44,7 +45,9 @@ export function ThemeProvider({
   children,
   defaultTheme = 'system',
   storageKey = 'theme',
+  attribute = 'class',
 }: ThemeProviderProps) {
+  void attribute
   const [theme, setThemeState] = useState<Theme>(defaultTheme)
   const [mounted, setMounted] = useState(false)
 
@@ -71,6 +74,28 @@ export function ThemeProvider({
     media.addEventListener('change', onChange)
     return () => media.removeEventListener('change', onChange)
   }, [theme, mounted])
+
+  useEffect(() => {
+    if (!mounted) return
+
+    const handleThemeShortcut = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null
+      if (
+        target?.isContentEditable ||
+        target?.closest('input, textarea, select, [contenteditable="true"]')
+      )
+        return
+
+      if (event.key.toLowerCase() !== 'd' || event.metaKey || event.ctrlKey)
+        return
+
+      event.preventDefault()
+      setTheme(theme === 'dark' ? 'light' : 'dark')
+    }
+
+    window.addEventListener('keydown', handleThemeShortcut)
+    return () => window.removeEventListener('keydown', handleThemeShortcut)
+  }, [mounted, theme])
 
   const setTheme = (next: Theme) => {
     localStorage.setItem(storageKey, next)

@@ -122,6 +122,7 @@ export function LabelPaletteManager({
                 >
                   <div className="flex items-center gap-2">
                     <Input
+                      aria-label={`Edit name for ${label.name}`}
                       autoFocus
                       value={editName}
                       onChange={(e) => {
@@ -250,6 +251,7 @@ export function LabelPaletteManager({
                 </div>
 
                 <Input
+                  aria-label="New label name"
                   autoFocus
                   placeholder="Label name (e.g. Urgent, Design, Backend)..."
                   value={newLabelName}
@@ -258,6 +260,8 @@ export function LabelPaletteManager({
                     setCreateError(null)
                   }}
                   disabled={isCreatingSubmitting}
+                  required
+                  minLength={1}
                   className="text-xs h-8 bg-background"
                 />
 

@@ -99,6 +99,7 @@ export function CardModalAssignees({
 
             {boardMembers.length > 5 && (
               <Input
+                aria-label="Filter members"
                 placeholder="Filter members..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}

@@ -95,7 +95,7 @@ export function PrototypeSwitcher({ actions }: PrototypeSwitcherProps) {
               title="Reset mock board state to initial"
               className="gap-1 rounded-full px-2.5 text-sm text-muted-foreground hover:text-foreground h-7"
             >
-              <RotateCcw className="size-3.5" />
+              <RotateCcw data-icon="inline-start" className="size-3.5" />
               <span>Reset</span>
             </Button>
 
@@ -122,7 +122,7 @@ export function PrototypeSwitcher({ actions }: PrototypeSwitcherProps) {
               title="Inspect live state JSON"
               className="gap-1 rounded-full px-2.5 text-sm text-muted-foreground hover:text-foreground h-7"
             >
-              <Code2 className="size-3.5" />
+              <Code2 data-icon="inline-start" className="size-3.5" />
               <span>State</span>
             </Button>
           </div>
@@ -196,7 +196,10 @@ export function PrototypeSwitcher({ actions }: PrototypeSwitcherProps) {
                       variant="outline"
                       onClick={() => actions.restoreCard(card.id)}
                     >
-                      <Sparkles className="mr-1 size-3" />
+                      <Sparkles
+                        data-icon="inline-start"
+                        className="mr-1 size-3"
+                      />
                       Restore
                     </Button>
                   </div>

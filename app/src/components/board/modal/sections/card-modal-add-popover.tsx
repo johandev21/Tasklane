@@ -197,6 +197,7 @@ export function CardModalAddPopover({
 
             {boardMembers.length > 5 && (
               <Input
+                aria-label="Filter members"
                 placeholder="Filter members..."
                 value={memberSearchQuery}
                 onChange={(e) => setMemberSearchQuery(e.target.value)}

@@ -145,6 +145,7 @@ export const BoardCanvas = memo(function BoardCanvas({
                 className="rounded-2xl border border-border/80 bg-card p-3.5 shadow-md"
               >
                 <Input
+                  aria-label="New list title"
                   autoFocus
                   placeholder="Enter list title..."
                   value={newListTitle}

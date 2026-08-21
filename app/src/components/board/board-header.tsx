@@ -110,6 +110,7 @@ export function BoardHeader({
               <BreadcrumbItem className="min-w-0">
                 {isOwner && isEditingTitle ? (
                   <input
+                    aria-label="Board title"
                     autoFocus
                     value={titleInput}
                     onChange={(e) => setTitleInput(e.target.value)}
@@ -121,7 +122,7 @@ export function BoardHeader({
                         setIsEditingTitle(false)
                       }
                     }}
-                    className="w-full max-w-[130px] xs:max-w-[180px] sm:max-w-xs md:max-w-sm rounded-md border border-ring bg-background px-2 py-0.5 font-heading text-sm font-semibold text-foreground outline-none"
+                    className="w-full max-w-[130px] xs:max-w-[180px] sm:max-w-xs md:max-w-sm rounded-md border border-ring bg-background px-2 py-0.5 font-heading text-sm font-semibold text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                   />
                 ) : (
                   <BreadcrumbPage

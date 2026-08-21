@@ -192,6 +192,7 @@ export function CardModalDescription({
 
           {mode === 'write' ? (
             <textarea
+              aria-label="Card description"
               ref={textareaRef}
               autoFocus
               rows={5}

@@ -36,6 +36,7 @@ export function CardModalTitle({ title, onSaveTitle }: CardModalTitleProps) {
   return (
     <div className="w-full">
       <textarea
+        aria-label="Card title"
         ref={textareaRef}
         rows={1}
         value={val}

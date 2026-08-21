@@ -282,6 +282,7 @@ export function CardModalComments({
             ) : (
               <div className="flex flex-col gap-2 rounded-xl border border-border bg-background p-3 shadow-2xs focus-within:border-ring focus-within:ring-1 focus-within:ring-ring/20 transition-all">
                 <textarea
+                  aria-label="New comment"
                   autoFocus
                   rows={3}
                   placeholder="Write a comment..."
@@ -377,6 +378,7 @@ export function CardModalComments({
                     {isEditing ? (
                       <div className="flex flex-col gap-2 rounded-xl border border-ring bg-background p-2.5 shadow-2xs">
                         <textarea
+                          aria-label="Edit comment"
                           autoFocus
                           rows={2}
                           value={editText}

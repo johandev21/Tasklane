@@ -37,7 +37,7 @@ export interface BoardCanvasProps {
   cardLabelsMap?: Record<string, LabelDoc[] | undefined>
   cardAssigneesMap?: Record<string, BoardMemberUser[] | undefined>
   cardCommentsCountMap?: Record<string, number | undefined>
-  onAddList: (title: string) => void
+  onAddList: (title: string) => void | Promise<void>
   onRenameList: (listId: ListDoc['_id'], newTitle: string) => void
   onDeleteList: (list: ListDoc) => void
   onArchiveAllCards: (listId: ListDoc['_id']) => void
@@ -73,6 +73,8 @@ export const BoardCanvas = memo(function BoardCanvas({
   const canvasRef = useRef<HTMLDivElement>(null)
   const [isAddingList, setIsAddingList] = useState(false)
   const [newListTitle, setNewListTitle] = useState('')
+  const [isSubmittingList, setIsSubmittingList] = useState(false)
+  const [listError, setListError] = useState<string | null>(null)
 
   // Drag & drop active state
   const [activeCardId, setActiveCardId] = useState<CardDoc['_id'] | null>(null)
@@ -304,13 +306,25 @@ export const BoardCanvas = memo(function BoardCanvas({
     }
   }
 
-  const handleCreateListSubmit = (e: FormEvent) => {
+  const handleCreateListSubmit = async (e: FormEvent) => {
     e.preventDefault()
     const trimmed = newListTitle.trim()
-    if (trimmed) {
-      onAddList(trimmed)
+    if (!trimmed) {
+      setListError('List title is required')
+      return
+    }
+    try {
+      setIsSubmittingList(true)
+      setListError(null)
+      await onAddList(trimmed)
       setNewListTitle('')
       setIsAddingList(false)
+    } catch (error) {
+      setListError(
+        error instanceof Error ? error.message : 'Failed to add list',
+      )
+    } finally {
+      setIsSubmittingList(false)
     }
   }
 
@@ -396,6 +410,10 @@ export const BoardCanvas = memo(function BoardCanvas({
                 className="rounded-2xl border border-border/80 bg-card p-3.5 shadow-md flex flex-col gap-3"
               >
                 <Input
+                  id="new-list-title"
+                  aria-label="New list title"
+                  aria-describedby={listError ? 'new-list-error' : undefined}
+                  aria-invalid={listError ? true : undefined}
                   autoFocus
                   placeholder={
                     optimisticLists.length === 0
@@ -404,21 +422,38 @@ export const BoardCanvas = memo(function BoardCanvas({
                   }
                   value={newListTitle}
                   onChange={(e) => setNewListTitle(e.target.value)}
+                  required
+                  minLength={1}
+                  disabled={isSubmittingList}
                   className="text-sm break-all"
                 />
+                {listError && (
+                  <p
+                    id="new-list-error"
+                    role="alert"
+                    className="text-xs text-destructive"
+                  >
+                    {listError}
+                  </p>
+                )}
                 <div className="flex items-center gap-2">
                   <Button
                     size="sm"
                     type="submit"
-                    disabled={!newListTitle.trim()}
+                    disabled={!newListTitle.trim() || isSubmittingList}
                   >
-                    {optimisticLists.length === 0 ? 'Create List' : 'Add List'}
+                    {isSubmittingList
+                      ? 'Adding...'
+                      : optimisticLists.length === 0
+                        ? 'Create List'
+                        : 'Add List'}
                   </Button>
                   <Button
                     size="sm"
                     variant="ghost"
                     type="button"
                     onClick={() => {
+                      setListError(null)
                       setIsAddingList(false)
                       setNewListTitle('')
                     }}
