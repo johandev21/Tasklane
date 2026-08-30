@@ -3,7 +3,8 @@ import { cva  } from 'class-variance-authority'
 import type {VariantProps} from 'class-variance-authority';
 import { Slot } from 'radix-ui'
 
-import { useIsMobile } from '#/hooks/use-mobile.ts'
+import { useIsMobile } from '#/shared/hooks/use-mobile.ts'
+
 import { cn } from '#/shared/utils/cn.ts'
 import { Button } from '#/shared/components/ui/button.tsx'
 import { Input } from '#/shared/components/ui/input.tsx'

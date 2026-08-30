@@ -21,8 +21,9 @@ import {
   AvatarFallback,
   AvatarImage,
 } from '#/shared/components/ui/avatar.tsx'
-import { ModeToggle } from '#/components/mode-toggle.tsx'
-import { useInfiniteScroll } from '#/hooks/use-infinite-scroll.ts'
+import { ModeToggle } from '#/shared/components/mode-toggle.tsx'
+import { useInfiniteScroll } from '#/shared/hooks/use-infinite-scroll.ts'
+
 import {
   formatActivityMessage,
   formatRelativeTime,

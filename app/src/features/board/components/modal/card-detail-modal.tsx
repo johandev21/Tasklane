@@ -10,7 +10,8 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from '#/shared/components/ui/drawer.tsx'
-import { useIsMobile } from '#/hooks/use-mobile.ts'
+import { useIsMobile } from '#/shared/hooks/use-mobile.ts'
+
 import { CardDetailModalContent } from './card-detail-modal-content.tsx'
 import type {
   BoardMemberUser,

@@ -1,4 +1,4 @@
-import { useState, memo } from 'react'
+import { memo } from 'react'
 import type { FormEvent } from 'react'
 import { DndContext, DragOverlay } from '@dnd-kit/core'
 import {
@@ -11,6 +11,7 @@ import { Input } from '#/shared/components/ui/input.tsx'
 import { ListColumn } from './list-column.tsx'
 import { CardItem } from './card-item.tsx'
 import { useBoardDragAndDrop } from '#/features/board/hooks/use-board-drag-and-drop.ts'
+import { useAddListForm } from '#/features/board/hooks/use-add-list-form.ts'
 import type {
   BoardMemberUser,
   ListDoc,
@@ -354,48 +355,4 @@ function BoardDragOverlay({
       ) : null}
     </DragOverlay>
   )
-}
-
-function useAddListForm(onAddList: (title: string) => void | Promise<void>) {
-  const [isAdding, setIsAdding] = useState(false)
-  const [title, setTitle] = useState('')
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-
-  const reset = () => {
-    setError(null)
-    setIsAdding(false)
-    setTitle('')
-  }
-
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault()
-    const trimmed = title.trim()
-    if (!trimmed) {
-      setError('List title is required')
-      return
-    }
-    try {
-      setIsSubmitting(true)
-      setError(null)
-      await onAddList(trimmed)
-      setTitle('')
-      setIsAdding(false)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to add list')
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
-
-  return {
-    isAdding,
-    title,
-    isSubmitting,
-    error,
-    setIsAdding,
-    setTitle,
-    reset,
-    handleSubmit,
-  }
 }

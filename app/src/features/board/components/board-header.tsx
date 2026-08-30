@@ -21,7 +21,8 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '#/shared/components/ui/popover.tsx'
-import { ModeToggle } from '#/components/mode-toggle.tsx'
+import { ModeToggle } from '#/shared/components/mode-toggle.tsx'
+
 import { getInitials } from '#/features/board/utils/board-transforms.ts'
 import { BoardMembersDialog } from './board-members-dialog.tsx'
 import { DeleteBoardDialog } from './delete-board-dialog.tsx'

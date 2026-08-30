@@ -3,16 +3,20 @@ import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useAuth } from '@clerk/tanstack-react-start'
 import { KanbanSquare, MessageSquare, Users, Zap } from 'lucide-react'
 
-import { Button } from '#/components/ui/button.tsx'
-import { Badge } from '#/components/ui/badge.tsx'
+import { Button } from '#/shared/components/ui/button.tsx'
+import { Badge } from '#/shared/components/ui/badge.tsx'
 import {
   Card,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '#/components/ui/card.tsx'
-import { Avatar, AvatarFallback, AvatarGroup } from '#/components/ui/avatar.tsx'
-import { ModeToggle } from '#/components/mode-toggle.tsx'
+} from '#/shared/components/ui/card.tsx'
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarGroup,
+} from '#/shared/components/ui/avatar.tsx'
+import { ModeToggle } from '#/shared/components/mode-toggle.tsx'
 
 export const Route = createFileRoute('/')({ component: LandingPage })
 
