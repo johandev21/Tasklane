@@ -2,13 +2,13 @@ import { Link } from '@tanstack/react-router'
 import {
   LayoutDashboard,
   ArrowLeft,
-  Kanban,
   Search,
   CheckCircle2,
   Clock,
   HelpCircle,
 } from 'lucide-react'
 import { Button } from '#/shared/components/ui/button.tsx'
+import { Logo } from '#/shared/components/logo.tsx'
 
 export function NotFound() {
   const handleGoBack = () => {
@@ -25,9 +25,7 @@ export function NotFound() {
           to="/home"
           className="flex items-center gap-2 font-heading text-base font-semibold tracking-tight text-foreground transition-opacity hover:opacity-80"
         >
-          <div className="flex size-7 items-center justify-center rounded-lg bg-foreground text-background shadow-xs">
-            <Kanban className="size-4" />
-          </div>
+          <Logo className="size-7 text-foreground" />
           <span>Tasklane</span>
         </Link>
 

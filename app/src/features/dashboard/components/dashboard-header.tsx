@@ -8,6 +8,7 @@ import {
   BreadcrumbSeparator,
 } from '#/shared/components/ui/breadcrumb.tsx'
 import { ModeToggle } from '#/shared/components/mode-toggle.tsx'
+import { Logo } from '#/shared/components/logo.tsx'
 
 export function DashboardHeader() {
   return (
@@ -16,8 +17,9 @@ export function DashboardHeader() {
         <div className="flex items-center gap-2">
           <Link
             to="/home"
-            className="font-heading text-base font-semibold tracking-tight text-foreground transition-opacity hover:opacity-90"
+            className="flex items-center gap-2 font-heading text-base font-semibold tracking-tight text-foreground transition-opacity hover:opacity-90"
           >
+            <Logo className="size-5 text-foreground" />
             Tasklane
           </Link>
 

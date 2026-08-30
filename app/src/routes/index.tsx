@@ -17,6 +17,7 @@ import {
   AvatarGroup,
 } from '#/shared/components/ui/avatar.tsx'
 import { ModeToggle } from '#/shared/components/mode-toggle.tsx'
+import { Logo } from '#/shared/components/logo.tsx'
 
 export const Route = createFileRoute('/')({ component: LandingPage })
 
@@ -59,7 +60,7 @@ function LandingHeader({
           to="/"
           className="flex items-center gap-2 font-semibold tracking-tight transition-opacity hover:opacity-90"
         >
-          <KanbanSquare className="size-6 shrink-0 text-foreground" />
+          <Logo className="size-6 text-foreground" />
           <span className="font-heading text-base font-semibold tracking-tight text-foreground">
             Tasklane
           </span>

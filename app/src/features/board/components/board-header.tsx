@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from '@tanstack/react-router'
-import { Menu, KanbanSquare, Trash2, UserPlus } from 'lucide-react'
+import { Menu, Trash2, UserPlus } from 'lucide-react'
 import { UserButton } from '@clerk/tanstack-react-start'
 import { Button } from '#/shared/components/ui/button.tsx'
 import {
@@ -22,6 +22,7 @@ import {
   PopoverTrigger,
 } from '#/shared/components/ui/popover.tsx'
 import { ModeToggle } from '#/shared/components/mode-toggle.tsx'
+import { Logo } from '#/shared/components/logo.tsx'
 
 import { getInitials } from '#/features/board/utils/board-transforms.ts'
 import { BoardMembersDialog } from './board-members-dialog.tsx'
@@ -145,7 +146,7 @@ function BoardHeaderBrand({
         to="/home"
         className="flex items-center gap-2 font-heading text-base font-semibold tracking-tight text-foreground transition-opacity hover:opacity-90 shrink-0"
       >
-        <KanbanSquare className="size-5 shrink-0 text-foreground" />
+        <Logo className="size-5 text-foreground" />
         <span className="hidden xs:inline font-heading text-base font-semibold tracking-tight text-foreground">
           Tasklane
         </span>
