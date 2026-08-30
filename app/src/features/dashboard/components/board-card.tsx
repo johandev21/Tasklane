@@ -1,8 +1,7 @@
 import { Link } from '@tanstack/react-router'
 import { ArrowUpRight, Users } from 'lucide-react'
 import { Badge } from '#/shared/components/ui/badge.tsx'
-
-import type { BoardSummary } from './types.ts'
+import type { BoardSummary } from '../types/dashboard.types.ts'
 
 interface BoardCardProps {
   board: BoardSummary
@@ -13,7 +12,8 @@ interface BoardCardProps {
  */
 export function BoardCard({ board }: BoardCardProps) {
   const listsCount = board.listsCount
-  const cardsCount = board.cardsCount ?? 0
+  const cardsCount = board.cardsCount
+
   const memberCount = board.memberCount
 
   return (

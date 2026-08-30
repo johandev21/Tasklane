@@ -5,11 +5,12 @@ import { Input } from '#/shared/components/ui/input.tsx'
 import { DeleteLabelDialog } from './delete-label-dialog.tsx'
 import {
   LABEL_COLOR_OPTIONS,
-  getLabelColor
-  
-  
+  getLabelColor,
 } from '#/features/board/utils/label-colors.ts'
-import type {LabelColorKey, LabelColorDefinition} from '#/features/board/utils/label-colors.ts';
+import type {
+  LabelColorKey,
+  LabelColorDefinition,
+} from '#/features/board/utils/label-colors.ts'
 import type { LabelDoc } from '#/features/board/types/board.types.ts'
 
 export interface LabelPaletteManagerProps {

@@ -1,4 +1,4 @@
-import type { BoardSummary } from './types.ts'
+import type { BoardSummary } from '../types/dashboard.types.ts'
 
 interface TelemetryStripProps {
   boards: BoardSummary[]
@@ -8,7 +8,8 @@ interface TelemetryStripProps {
  * Operational telemetry overview displaying aggregate board workload statistics.
  */
 export function TelemetryStrip({ boards }: TelemetryStripProps) {
-  const totalCards = boards.reduce((sum, b) => sum + (b.cardsCount ?? 0), 0)
+  const totalCards = boards.reduce((sum, b) => sum + b.cardsCount, 0)
+
   const totalLists = boards.reduce((sum, b) => sum + b.listsCount, 0)
   const peakMembers = Math.max(...boards.map((b) => b.memberCount), 0)
 
