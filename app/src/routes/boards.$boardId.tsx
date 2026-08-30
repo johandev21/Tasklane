@@ -5,17 +5,19 @@ import {
   EmptyDescription,
   EmptyHeader,
   EmptyTitle,
-} from '#/components/ui/empty.tsx'
-import { Button } from '#/components/ui/button.tsx'
-import { AppError } from '#/components/ui/app-error.tsx'
-import { BoardSkeleton } from '#/components/board/board-skeleton.tsx'
-import { BoardHeader } from '#/components/board/board-header.tsx'
-import { BoardCanvas } from '#/components/board/board-canvas.tsx'
-import { CardDetailModal } from '#/components/board/modal/card-detail-modal.tsx'
-import { DeleteListDialog } from '#/components/board/delete-list-dialog.tsx'
-import { BoardMenuSheet } from '#/components/board/board-menu-sheet.tsx'
-import { useBoardPage } from '#/components/board/hooks/use-board-page.ts'
-import type { BoardPageState } from '#/components/board/hooks/use-board-page.ts'
+} from '#/shared/components/ui/empty.tsx'
+import { Button } from '#/shared/components/ui/button.tsx'
+import { AppError } from '#/shared/components/ui/app-error.tsx'
+import {
+  BoardSkeleton,
+  BoardHeader,
+  BoardCanvas,
+  CardDetailModal,
+  DeleteListDialog,
+  BoardMenuSheet,
+  useBoardPage,
+} from '#/features/board'
+import type { BoardPageState } from '#/features/board'
 
 export const Route = createFileRoute('/boards/$boardId')({
   errorComponent: AppError,
