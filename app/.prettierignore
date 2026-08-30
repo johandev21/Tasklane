@@ -1,6 +1,7 @@
-package-lock.json
-pnpm-lock.yaml
-yarn.lock
+.output
+dist
+dist-ssr
 convex/_generated
 src/routeTree.gen.ts
-src/components/ui
+src/components/ui/**
+src/shared/components/ui/**
