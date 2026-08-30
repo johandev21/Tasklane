@@ -13,21 +13,6 @@ export interface CardModalDueDateProps {
   onUpdateDueDate: (dueDate: number | undefined) => void
 }
 
-function formatForInput(timestamp?: number): string {
-  if (!timestamp) return ''
-  try {
-    const d = new Date(timestamp)
-    const year = d.getFullYear()
-    const month = String(d.getMonth() + 1).padStart(2, '0')
-    const day = String(d.getDate()).padStart(2, '0')
-    const hours = String(d.getHours()).padStart(2, '0')
-    const minutes = String(d.getMinutes()).padStart(2, '0')
-    return `${year}-${month}-${day}T${hours}:${minutes}`
-  } catch {
-    return ''
-  }
-}
-
 export function CardModalDueDate({
   dueDate,
   onUpdateDueDate,
@@ -46,19 +31,24 @@ export function CardModalDueDate({
     }
   }
 
-  const setPresetTomorrow = () => {
+  const handleSetTomorrow = () => {
     const d = new Date()
     d.setDate(d.getDate() + 1)
-    d.setHours(17, 0, 0, 0) // 5:00 PM tomorrow
+    d.setHours(17, 0, 0, 0)
     onUpdateDueDate(d.getTime())
     setIsOpen(false)
   }
 
-  const setPresetNextWeek = () => {
+  const handleSetNextWeek = () => {
     const d = new Date()
     d.setDate(d.getDate() + 7)
-    d.setHours(17, 0, 0, 0) // 5:00 PM next week
+    d.setHours(17, 0, 0, 0)
     onUpdateDueDate(d.getTime())
+    setIsOpen(false)
+  }
+
+  const handleClear = () => {
+    onUpdateDueDate(undefined)
     setIsOpen(false)
   }
 
@@ -71,126 +61,21 @@ export function CardModalDueDate({
       <div className="flex items-center gap-2 flex-wrap">
         <Popover modal={true} open={isOpen} onOpenChange={setIsOpen}>
           <PopoverTrigger asChild>
-            {dueDate ? (
-              <button
-                type="button"
-                aria-label="Close due date picker"
-                className={`inline-flex items-center gap-2 rounded-xl border px-3 py-1.5 text-sm font-medium transition-colors cursor-pointer ${
-                  isOverdue
-                    ? 'bg-red-500/15 border-red-300 dark:border-red-800/80 text-red-600 dark:text-red-400 hover:bg-red-500/25'
-                    : 'bg-muted/40 border-border/80 hover:bg-muted/80 text-foreground'
-                }`}
-              >
-                <Clock className="size-3.5" />
-                <span>
-                  {new Date(dueDate).toLocaleDateString(undefined, {
-                    month: 'short',
-                    day: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  })}
-                </span>
-                {isOverdue && (
-                  <span className="rounded-md bg-red-600 px-1.5 py-0.5 text-xs font-bold text-white uppercase flex items-center gap-0.5">
-                    <Flame className="size-3" />
-                    Overdue
-                  </span>
-                )}
-              </button>
-            ) : (
-              <Button
-                variant="outline"
-                size="sm"
-                className="gap-1.5 rounded-xl border-dashed border-border/80 hover:border-foreground/60 text-muted-foreground hover:text-foreground text-sm font-medium h-8 px-3 cursor-pointer"
-              >
-                <Plus className="size-3.5" />
-                <Calendar className="size-3.5" />
-                <span>Set due date</span>
-              </Button>
-            )}
+            <DueDateTriggerButton dueDate={dueDate} isOverdue={isOverdue} />
           </PopoverTrigger>
 
           <PopoverContent
             align="start"
             className="w-80 p-4 flex flex-col gap-3"
           >
-            <div className="flex items-center justify-between border-b border-border/40 pb-2">
-              <span className="text-sm font-semibold text-foreground flex items-center gap-1.5">
-                <Calendar className="size-4 text-primary" />
-                <span>Set Due Date & Time</span>
-              </span>
-              <button
-                type="button"
-                aria-label="Close due date editor"
-                onClick={() => setIsOpen(false)}
-                className="rounded p-1 text-muted-foreground hover:text-foreground cursor-pointer"
-              >
-                <X className="size-3.5" />
-              </button>
-            </div>
-
-            <div className="flex flex-col gap-1.5">
-              <label
-                htmlFor="dueDateInput"
-                className="text-xs text-muted-foreground"
-              >
-                Date & Time
-              </label>
-              <Input
-                id="dueDateInput"
-                type="datetime-local"
-                value={formatForInput(dueDate)}
-                onChange={(e) => handleInputChange(e.target.value)}
-                className="h-9 text-sm bg-background"
-              />
-            </div>
-
-            {/* Quick Presets */}
-            <div className="flex items-center gap-2 pt-1">
-              <Button
-                size="xs"
-                variant="outline"
-                type="button"
-                onClick={setPresetTomorrow}
-                className="flex-1 text-xs cursor-pointer"
-              >
-                Tomorrow 5 PM
-              </Button>
-              <Button
-                size="xs"
-                variant="outline"
-                type="button"
-                onClick={setPresetNextWeek}
-                className="flex-1 text-xs cursor-pointer"
-              >
-                In 1 Week
-              </Button>
-            </div>
-
-            {dueDate && (
-              <div className="pt-2 border-t border-border/40 flex items-center justify-between">
-                <Button
-                  size="xs"
-                  variant="ghost"
-                  type="button"
-                  onClick={() => {
-                    onUpdateDueDate(undefined)
-                    setIsOpen(false)
-                  }}
-                  className="text-xs text-destructive hover:bg-destructive/10 h-7 px-2 cursor-pointer"
-                >
-                  Remove due date
-                </Button>
-                <Button
-                  size="xs"
-                  type="button"
-                  onClick={() => setIsOpen(false)}
-                  className="text-xs h-7 px-3 cursor-pointer"
-                >
-                  Done
-                </Button>
-              </div>
-            )}
+            <DueDateEditor
+              dueDate={dueDate}
+              onClose={() => setIsOpen(false)}
+              onChange={handleInputChange}
+              onSetTomorrow={handleSetTomorrow}
+              onSetNextWeek={handleSetNextWeek}
+              onClear={handleClear}
+            />
           </PopoverContent>
         </Popover>
 
@@ -209,4 +94,177 @@ export function CardModalDueDate({
       </div>
     </div>
   )
+}
+
+function DueDateTriggerButton({
+  dueDate,
+  isOverdue,
+}: {
+  dueDate?: number
+  isOverdue: boolean
+}) {
+  if (dueDate) {
+    return (
+      <button
+        type="button"
+        aria-label="Close due date picker"
+        className={`inline-flex items-center gap-2 rounded-xl border px-3 py-1.5 text-sm font-medium transition-colors cursor-pointer ${
+          isOverdue
+            ? 'bg-red-500/15 border-red-300 dark:border-red-800/80 text-red-600 dark:text-red-400 hover:bg-red-500/25'
+            : 'bg-muted/40 border-border/80 hover:bg-muted/80 text-foreground'
+        }`}
+      >
+        <Clock className="size-3.5" />
+        <span>
+          {new Date(dueDate).toLocaleDateString(undefined, {
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+          })}
+        </span>
+        {isOverdue && (
+          <span className="rounded-md bg-red-600 px-1.5 py-0.5 text-xs font-bold text-white uppercase flex items-center gap-0.5">
+            <Flame className="size-3" />
+            Overdue
+          </span>
+        )}
+      </button>
+    )
+  }
+
+  return (
+    <Button
+      variant="outline"
+      size="sm"
+      className="gap-1.5 rounded-xl border-dashed border-border/80 hover:border-foreground/60 text-muted-foreground hover:text-foreground text-sm font-medium h-8 px-3 cursor-pointer"
+    >
+      <Plus className="size-3.5" />
+      <Calendar className="size-3.5" />
+      <span>Set due date</span>
+    </Button>
+  )
+}
+
+interface DueDateEditorProps {
+  dueDate?: number
+  onClose: () => void
+  onChange: (val: string) => void
+  onSetTomorrow: () => void
+  onSetNextWeek: () => void
+  onClear: () => void
+}
+
+function DueDateEditor({
+  dueDate,
+  onClose,
+  onChange,
+  onSetTomorrow,
+  onSetNextWeek,
+  onClear,
+}: DueDateEditorProps) {
+  return (
+    <>
+      <div className="flex items-center justify-between border-b border-border/40 pb-2">
+        <span className="text-sm font-semibold text-foreground flex items-center gap-1.5">
+          <Calendar className="size-4 text-primary" />
+          <span>Set Due Date & Time</span>
+        </span>
+        <button
+          type="button"
+          aria-label="Close due date editor"
+          onClick={onClose}
+          className="rounded p-1 text-muted-foreground hover:text-foreground cursor-pointer"
+        >
+          <X className="size-3.5" />
+        </button>
+      </div>
+
+      <div className="flex flex-col gap-1.5">
+        <label htmlFor="dueDateInput" className="text-xs text-muted-foreground">
+          Date & Time
+        </label>
+        <Input
+          id="dueDateInput"
+          type="datetime-local"
+          value={formatForInput(dueDate)}
+          onChange={(e) => onChange(e.target.value)}
+          className="h-9 text-sm bg-background"
+        />
+      </div>
+
+      <DueDatePresets
+        onSetTomorrow={onSetTomorrow}
+        onSetNextWeek={onSetNextWeek}
+      />
+
+      {dueDate && (
+        <div className="pt-2 border-t border-border/40 flex items-center justify-between">
+          <Button
+            size="xs"
+            variant="ghost"
+            type="button"
+            onClick={onClear}
+            className="text-xs text-destructive hover:bg-destructive/10 h-7 px-2 cursor-pointer"
+          >
+            Remove due date
+          </Button>
+          <Button
+            size="xs"
+            type="button"
+            onClick={onClose}
+            className="text-xs h-7 px-3 cursor-pointer"
+          >
+            Done
+          </Button>
+        </div>
+      )}
+    </>
+  )
+}
+
+function DueDatePresets({
+  onSetTomorrow,
+  onSetNextWeek,
+}: {
+  onSetTomorrow: () => void
+  onSetNextWeek: () => void
+}) {
+  return (
+    <div className="flex items-center gap-2 pt-1">
+      <Button
+        size="xs"
+        variant="outline"
+        type="button"
+        onClick={onSetTomorrow}
+        className="flex-1 text-xs cursor-pointer"
+      >
+        Tomorrow 5 PM
+      </Button>
+      <Button
+        size="xs"
+        variant="outline"
+        type="button"
+        onClick={onSetNextWeek}
+        className="flex-1 text-xs cursor-pointer"
+      >
+        In 1 Week
+      </Button>
+    </div>
+  )
+}
+
+function formatForInput(timestamp?: number): string {
+  if (!timestamp) return ''
+  try {
+    const d = new Date(timestamp)
+    const year = d.getFullYear()
+    const month = String(d.getMonth() + 1).padStart(2, '0')
+    const day = String(d.getDate()).padStart(2, '0')
+    const hours = String(d.getHours()).padStart(2, '0')
+    const minutes = String(d.getMinutes()).padStart(2, '0')
+    return `${year}-${month}-${day}T${hours}:${minutes}`
+  } catch {
+    return ''
+  }
 }

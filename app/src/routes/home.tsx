@@ -27,37 +27,25 @@ import { BoardCard } from '#/components/dashboard/board-card.tsx'
 import { CreateBoardDialog } from '#/components/dashboard/create-board-dialog.tsx'
 import { DashboardSkeleton } from '#/components/dashboard/dashboard-skeleton.tsx'
 import { AppError } from '#/components/ui/app-error.tsx'
+import type { BoardSummary } from '#/components/dashboard/types.ts'
 
 export const Route = createFileRoute('/home')({
   errorComponent: AppError,
   component: HomePage,
 })
 
-function HomePage() {
+export function HomePage() {
   const navigate = useNavigate()
   const { isLoaded, isSignedIn } = useAuth()
-  const { user } = useUser()
-  const upsertUser = useMutation(api.users.upsertUser)
   const boards = useQuery(api.boards.list)
   const createBoardMutation = useMutation(api.boards.create)
+
+  useHomeUserSync(isLoaded)
 
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
   const [filterMode, setFilterMode] = useState<'all' | 'owned' | 'shared'>(
     'all',
   )
-
-  // Sync authenticated Clerk user to Convex users cache table
-  useEffect(() => {
-    if (isLoaded && user) {
-      upsertUser({
-        name: user.fullName || user.firstName || undefined,
-        email: user.primaryEmailAddress?.emailAddress || undefined,
-        imageUrl: user.imageUrl || undefined,
-      }).catch((err) => {
-        console.error('Failed to sync user in Convex:', err)
-      })
-    }
-  }, [isLoaded, user, upsertUser])
 
   const handleCreateBoard = async (name: string) => {
     try {
@@ -74,193 +62,51 @@ function HomePage() {
   }
 
   if (isLoaded && !isSignedIn) {
-    return (
-      <div className="flex min-h-screen flex-col items-center justify-center p-4">
-        <Empty className="max-w-md border border-border bg-card">
-          <EmptyHeader>
-            <EmptyTitle>Sign in required</EmptyTitle>
-            <EmptyDescription>
-              Please sign in to access your Tasklane boards.
-            </EmptyDescription>
-          </EmptyHeader>
-          <EmptyContent>
-            <Button asChild>
-              <Link to="/sign-in/$" params={{ _splat: '' }}>
-                Sign In
-              </Link>
-            </Button>
-          </EmptyContent>
-        </Empty>
-      </div>
-    )
+    return <HomeSignInRequired />
   }
 
   const isLoadingBoards = boards === undefined
   const allBoards = boards ?? []
-  const ownedBoards = allBoards.filter((b) => b.isOwner)
-  const sharedBoards = allBoards.filter((b) => !b.isOwner)
-
-  const displayedBoards =
-    filterMode === 'owned'
-      ? ownedBoards
-      : filterMode === 'shared'
-        ? sharedBoards
-        : allBoards
+  const displayedBoards = filterBoards(allBoards, filterMode)
 
   return (
     <div className="flex min-h-screen flex-col bg-app-background selection:bg-primary/10">
-      {/* Top Application Header */}
-      <header className="sticky top-0 z-40 border-b border-border/40 bg-app-background/85 backdrop-blur-md">
-        <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4 sm:px-6">
-          <div className="flex items-center gap-2">
-            <Link
-              to="/home"
-              className="font-heading text-base font-semibold tracking-tight text-foreground transition-opacity hover:opacity-90"
-            >
-              Tasklane
-            </Link>
+      <DashboardHeader />
 
-            <Breadcrumb className="hidden sm:block">
-              <BreadcrumbList className="flex items-center text-sm">
-                <BreadcrumbSeparator />
-                <BreadcrumbItem>
-                  <BreadcrumbPage>Boards</BreadcrumbPage>
-                </BreadcrumbItem>
-              </BreadcrumbList>
-            </Breadcrumb>
-          </div>
-
-          <div className="flex items-center gap-2.5">
-            <ModeToggle />
-            <UserButton
-              appearance={{
-                elements: {
-                  avatarBox: 'size-8 rounded-full ring-1 ring-border',
-                },
-              }}
-            />
-          </div>
-        </div>
-      </header>
-
-      {/* Main Content Area */}
       <main className="flex-1 pb-16">
         <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
           {isLoadingBoards ? (
             <DashboardSkeleton />
           ) : allBoards.length === 0 ? (
-            <div className="pt-12">
-              <Empty className="mx-auto max-w-lg border border-border bg-card/60 p-8 shadow-xs">
-                <EmptyHeader>
-                  <EmptyTitle>No boards yet</EmptyTitle>
-                  <EmptyDescription>
-                    Create your first board to start organizing work through
-                    lists and cards, with real-time collaboration.
-                  </EmptyDescription>
-                </EmptyHeader>
-                <EmptyContent>
-                  <Button onClick={() => setCreateDialogOpen(true)}>
-                    Create Board
-                  </Button>
-                </EmptyContent>
-              </Empty>
-            </div>
+            <NoBoardsState onOpenCreate={() => setCreateDialogOpen(true)} />
           ) : (
             <div className="flex flex-col gap-8">
-              {/* Telemetry Strip */}
               <TelemetryStrip boards={allBoards} />
 
-              {/* Action Bar with Segment Filter & Create Action */}
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setFilterMode('all')}
-                    className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
-                      filterMode === 'all'
-                        ? 'bg-foreground text-background'
-                        : 'bg-muted text-muted-foreground hover:text-foreground'
-                    }`}
-                  >
-                    All
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setFilterMode('owned')}
-                    className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
-                      filterMode === 'owned'
-                        ? 'bg-foreground text-background'
-                        : 'bg-muted text-muted-foreground hover:text-foreground'
-                    }`}
-                  >
-                    Owned
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setFilterMode('shared')}
-                    className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
-                      filterMode === 'shared'
-                        ? 'bg-foreground text-background'
-                        : 'bg-muted text-muted-foreground hover:text-foreground'
-                    }`}
-                  >
-                    Shared
-                  </button>
-                </div>
-
+                <BoardFilters
+                  filterMode={filterMode}
+                  onSelectFilter={setFilterMode}
+                />
                 <Button onClick={() => setCreateDialogOpen(true)}>
                   Create Board
                 </Button>
               </div>
 
-              {/* Boards Workload Grid or Filter Empty State */}
               {displayedBoards.length === 0 ? (
-                <div className="py-8">
-                  <Empty className="mx-auto max-w-md border border-border/80 bg-card/60 p-8 shadow-xs">
-                    <EmptyHeader>
-                      <EmptyTitle>
-                        {filterMode === 'owned'
-                          ? 'No owned boards'
-                          : 'No shared boards'}
-                      </EmptyTitle>
-                      <EmptyDescription>
-                        {filterMode === 'owned'
-                          ? 'You do not own any boards yet. Create a board or switch to view shared boards.'
-                          : 'No boards have been shared with you yet.'}
-                      </EmptyDescription>
-                    </EmptyHeader>
-                    <EmptyContent className="flex items-center gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setFilterMode('all')}
-                      >
-                        Show All Boards
-                      </Button>
-                      {filterMode === 'owned' && (
-                        <Button
-                          size="sm"
-                          onClick={() => setCreateDialogOpen(true)}
-                        >
-                          Create Board
-                        </Button>
-                      )}
-                    </EmptyContent>
-                  </Empty>
-                </div>
+                <NoFilteredBoardsState
+                  filterMode={filterMode}
+                  onResetFilter={() => setFilterMode('all')}
+                  onOpenCreate={() => setCreateDialogOpen(true)}
+                />
               ) : (
-                <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
-                  {displayedBoards.map((board) => (
-                    <BoardCard key={board._id} board={board} />
-                  ))}
-                </div>
+                <BoardGrid boards={displayedBoards} />
               )}
             </div>
           )}
         </div>
       </main>
 
-      {/* Create Board Modal Dialog */}
       <CreateBoardDialog
         open={createDialogOpen}
         onOpenChange={setCreateDialogOpen}
@@ -268,4 +114,206 @@ function HomePage() {
       />
     </div>
   )
+}
+
+function HomeSignInRequired() {
+  return (
+    <div className="flex min-h-screen flex-col items-center justify-center p-4">
+      <Empty className="max-w-md border border-border bg-card">
+        <EmptyHeader>
+          <EmptyTitle>Sign in required</EmptyTitle>
+          <EmptyDescription>
+            Please sign in to access your Tasklane boards.
+          </EmptyDescription>
+        </EmptyHeader>
+        <EmptyContent>
+          <Button asChild>
+            <Link to="/sign-in/$" params={{ _splat: '' }}>
+              Sign In
+            </Link>
+          </Button>
+        </EmptyContent>
+      </Empty>
+    </div>
+  )
+}
+
+function DashboardHeader() {
+  return (
+    <header className="sticky top-0 z-40 border-b border-border/40 bg-app-background/85 backdrop-blur-md">
+      <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4 sm:px-6">
+        <div className="flex items-center gap-2">
+          <Link
+            to="/home"
+            className="font-heading text-base font-semibold tracking-tight text-foreground transition-opacity hover:opacity-90"
+          >
+            Tasklane
+          </Link>
+
+          <Breadcrumb className="hidden sm:block">
+            <BreadcrumbList className="flex items-center text-sm">
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <BreadcrumbPage>Boards</BreadcrumbPage>
+              </BreadcrumbItem>
+            </BreadcrumbList>
+          </Breadcrumb>
+        </div>
+
+        <div className="flex items-center gap-2.5">
+          <ModeToggle />
+          <UserButton
+            appearance={{
+              elements: {
+                avatarBox: 'size-8 rounded-full ring-1 ring-border',
+              },
+            }}
+          />
+        </div>
+      </div>
+    </header>
+  )
+}
+
+interface BoardFiltersProps {
+  filterMode: 'all' | 'owned' | 'shared'
+  onSelectFilter: (mode: 'all' | 'owned' | 'shared') => void
+}
+
+function BoardFilters({ filterMode, onSelectFilter }: BoardFiltersProps) {
+  return (
+    <div className="flex items-center gap-2">
+      <button
+        type="button"
+        onClick={() => onSelectFilter('all')}
+        className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors cursor-pointer ${
+          filterMode === 'all'
+            ? 'bg-foreground text-background'
+            : 'bg-muted text-muted-foreground hover:text-foreground'
+        }`}
+      >
+        All
+      </button>
+      <button
+        type="button"
+        onClick={() => onSelectFilter('owned')}
+        className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors cursor-pointer ${
+          filterMode === 'owned'
+            ? 'bg-foreground text-background'
+            : 'bg-muted text-muted-foreground hover:text-foreground'
+        }`}
+      >
+        Owned
+      </button>
+      <button
+        type="button"
+        onClick={() => onSelectFilter('shared')}
+        className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors cursor-pointer ${
+          filterMode === 'shared'
+            ? 'bg-foreground text-background'
+            : 'bg-muted text-muted-foreground hover:text-foreground'
+        }`}
+      >
+        Shared
+      </button>
+    </div>
+  )
+}
+
+function BoardGrid({ boards }: { boards: BoardSummary[] }) {
+  return (
+    <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
+      {boards.map((board) => (
+        <BoardCard key={board._id} board={board} />
+      ))}
+    </div>
+  )
+}
+
+function NoBoardsState({ onOpenCreate }: { onOpenCreate: () => void }) {
+  return (
+    <div className="pt-12">
+      <Empty className="mx-auto max-w-lg border border-border bg-card/60 p-8 shadow-xs">
+        <EmptyHeader>
+          <EmptyTitle>No boards yet</EmptyTitle>
+          <EmptyDescription>
+            Create your first board to start organizing work through lists and
+            cards, with real-time collaboration.
+          </EmptyDescription>
+        </EmptyHeader>
+        <EmptyContent>
+          <Button onClick={onOpenCreate}>Create Board</Button>
+        </EmptyContent>
+      </Empty>
+    </div>
+  )
+}
+
+interface NoFilteredBoardsStateProps {
+  filterMode: 'all' | 'owned' | 'shared'
+  onResetFilter: () => void
+  onOpenCreate: () => void
+}
+
+function NoFilteredBoardsState({
+  filterMode,
+  onResetFilter,
+  onOpenCreate,
+}: NoFilteredBoardsStateProps) {
+  return (
+    <div className="py-8">
+      <Empty className="mx-auto max-w-md border border-border/80 bg-card/60 p-8 shadow-xs">
+        <EmptyHeader>
+          <EmptyTitle>
+            {filterMode === 'owned' ? 'No owned boards' : 'No shared boards'}
+          </EmptyTitle>
+          <EmptyDescription>
+            {filterMode === 'owned'
+              ? 'You do not own any boards yet. Create a board or switch to view shared boards.'
+              : 'No boards have been shared with you yet.'}
+          </EmptyDescription>
+        </EmptyHeader>
+        <EmptyContent className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={onResetFilter}>
+            Show All Boards
+          </Button>
+          {filterMode === 'owned' && (
+            <Button size="sm" onClick={onOpenCreate}>
+              Create Board
+            </Button>
+          )}
+        </EmptyContent>
+      </Empty>
+    </div>
+  )
+}
+
+function filterBoards(
+  boards: BoardSummary[],
+  filterMode: 'all' | 'owned' | 'shared',
+): BoardSummary[] {
+  if (filterMode === 'owned') {
+    return boards.filter((b) => b.isOwner)
+  }
+  if (filterMode === 'shared') {
+    return boards.filter((b) => !b.isOwner)
+  }
+  return boards
+}
+
+function useHomeUserSync(isLoaded: boolean) {
+  const { user } = useUser()
+  const upsertUser = useMutation(api.users.upsertUser)
+
+  useEffect(() => {
+    if (isLoaded && user) {
+      upsertUser({
+        name: user.fullName || user.firstName || undefined,
+        email: user.primaryEmailAddress?.emailAddress || undefined,
+        imageUrl: user.imageUrl || undefined,
+      }).catch((err) => {
+        console.error('Failed to sync user in Convex:', err)
+      })
+    }
+  }, [isLoaded, user, upsertUser])
 }
