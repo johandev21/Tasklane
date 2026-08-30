@@ -40,6 +40,7 @@ export default [
       'convex/_generated/**',
       'src/routeTree.gen.ts',
       'src/components/ui/**',
+      'src/shared/components/ui/**',
       '.output/**',
       'dist/**',
       'dist-ssr/**',

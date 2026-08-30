@@ -4,15 +4,15 @@ import { TanStackDevtools } from '@tanstack/react-devtools'
 import { ClerkProvider, useAuth } from '@clerk/tanstack-react-start'
 import { ConvexProviderWithClerk } from 'convex/react-clerk'
 
-import { convex } from '../lib/convex'
+import { convex } from '#/shared/api/convex-client.ts'
 import appCss from '../styles.css?url'
 
-import { ThemeProvider } from '../components/theme-provider'
-import { Toaster } from '#/components/ui/sonner.tsx'
-import { AppError } from '#/components/ui/app-error.tsx'
-import type { AppErrorProps } from '#/components/ui/app-error.tsx'
-import { NotFound } from '#/components/ui/not-found.tsx'
-import { OfflineBanner } from '#/components/ui/offline-banner.tsx'
+import { ThemeProvider } from '#/app/providers/theme-provider.tsx'
+import { Toaster } from '#/shared/components/ui/sonner.tsx'
+import { AppError } from '#/shared/components/ui/app-error.tsx'
+import type { AppErrorProps } from '#/shared/components/ui/app-error.tsx'
+import { NotFound } from '#/shared/components/ui/not-found.tsx'
+import { OfflineBanner } from '#/shared/components/ui/offline-banner.tsx'
 
 function ErrorBoundary(props: AppErrorProps) {
   return <AppError {...props} />

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Button } from '#/components/ui/button.tsx'
+import { Button } from '#/shared/components/ui/button.tsx'
 import {
   Dialog,
   DialogContent,
@@ -7,10 +7,10 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '#/components/ui/dialog.tsx'
-import { Field, FieldGroup, FieldLabel } from '#/components/ui/field.tsx'
-import { Input } from '#/components/ui/input.tsx'
-import { Spinner } from '#/components/ui/spinner.tsx'
+} from '#/shared/components/ui/dialog.tsx'
+import { Field, FieldGroup, FieldLabel } from '#/shared/components/ui/field.tsx'
+import { Input } from '#/shared/components/ui/input.tsx'
+import { Spinner } from '#/shared/components/ui/spinner.tsx'
 
 interface CreateBoardDialogProps {
   open: boolean
