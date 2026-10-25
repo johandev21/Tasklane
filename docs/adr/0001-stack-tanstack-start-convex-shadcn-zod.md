@@ -1,0 +1,5 @@
+# Stack: TanStack Start + Convex + shadcn/ui + Zod
+
+We use TanStack Start as the full-stack React framework, Convex as the reactive backend (database and serverless functions), shadcn/ui for the component layer, and Zod for shared validation. Clerk handles identity (ADR 0002).
+
+We chose Convex over Postgres + Drizzle + a custom Socket.io server (the stack this record supersedes) because Convex folds persistence, serverless functions, and real-time reactivity into one typed platform: schemas, queries, and mutations are written in TypeScript and compiled into an end-to-end-typed API, so there is no ORM, migration tooling, or custom realtime transport to build or maintain. TanStack Start over Next.js for file-based routing, fully typed search params, and server functions without App Router conventions; shadcn/ui over hand-rolled components for accessible, themeable Radix + Tailwind primitives. Zod is used wherever validation crosses a trust boundary (server functions and form input), so client and server share one set of schemas.
