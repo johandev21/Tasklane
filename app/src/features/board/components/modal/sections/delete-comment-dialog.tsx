@@ -12,7 +12,7 @@ import {
 import type { CommentDoc } from '#/features/board/types/board.types.ts'
 
 export interface DeleteCommentDialogProps {
-  commentId: CommentDoc['_id'] | null
+  commentId: CommentDoc['id'] | null
   isOpen: boolean
   onClose: () => void
   onConfirm: () => void

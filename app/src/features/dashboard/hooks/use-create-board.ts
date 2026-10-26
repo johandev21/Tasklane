@@ -1,12 +1,18 @@
 import { useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
-import { useMutation } from 'convex/react'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { queryKeys } from '#/shared/api/query-keys.ts'
 import { toast } from 'sonner'
-import { api } from '../../../../convex/_generated/api'
+import { api } from '#/shared/api/client.ts'
 
 export function useCreateBoard() {
   const navigate = useNavigate()
-  const createBoardMutation = useMutation(api.boards.create)
+  const client = useQueryClient()
+  const createBoardMutation = useMutation({
+    mutationFn: api.boards.create,
+    networkMode: 'always',
+    onSuccess: () => client.invalidateQueries({ queryKey: queryKeys.boards }),
+  }).mutateAsync
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const createBoard = async (name: string) => {

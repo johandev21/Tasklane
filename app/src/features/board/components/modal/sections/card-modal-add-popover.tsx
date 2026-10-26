@@ -167,11 +167,11 @@ function AddPopoverLabelsView({
       <div className="space-y-1.5 max-h-60 overflow-y-auto p-0.5">
         {boardLabels.map((lbl) => {
           const colorDef = getLabelColor(lbl.color)
-          const isSelected = cardLabels.some((l) => l._id === lbl._id)
+          const isSelected = cardLabels.some((l) => l.id === lbl.id)
 
           return (
             <button
-              key={lbl._id}
+              key={lbl.id}
               type="button"
               onClick={() => onToggleLabel(lbl)}
               className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm transition-colors text-left cursor-pointer ${

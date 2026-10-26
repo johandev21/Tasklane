@@ -26,17 +26,17 @@ export interface BoardCanvasProps {
   cardAssigneesMap?: Record<string, BoardMemberUser[] | undefined>
   cardCommentsCountMap?: Record<string, number | undefined>
   onAddList: (title: string) => void | Promise<void>
-  onRenameList: (listId: ListDoc['_id'], newTitle: string) => void
+  onRenameList: (listId: ListDoc['id'], newTitle: string) => void
   onDeleteList: (list: ListDoc) => void
-  onArchiveAllCards: (listId: ListDoc['_id']) => void
-  onAddCard: (listId: ListDoc['_id'], title: string) => void
-  onRenameCard: (cardId: CardDoc['_id'], title: string) => void
-  onArchiveCard: (cardId: CardDoc['_id']) => void
+  onArchiveAllCards: (listId: ListDoc['id']) => void
+  onAddCard: (listId: ListDoc['id'], title: string) => void
+  onRenameCard: (cardId: CardDoc['id'], title: string) => void
+  onArchiveCard: (cardId: CardDoc['id']) => void
   onCardClick?: (card: CardDoc) => void
-  onReorderList?: (listId: ListDoc['_id'], newPosition: number) => void
+  onReorderList?: (listId: ListDoc['id'], newPosition: number) => void
   onReorderCard?: (
-    cardId: CardDoc['_id'],
-    targetListId: ListDoc['_id'],
+    cardId: CardDoc['id'],
+    targetListId: ListDoc['id'],
     newPosition: number,
   ) => void
 }
@@ -106,21 +106,21 @@ export const BoardCanvas = memo(function BoardCanvas(props: BoardCanvasProps) {
 interface BoardListLaneProps {
   lists: ListDoc[]
   cards: CardDoc[]
-  listIds: ListDoc['_id'][]
+  listIds: ListDoc['id'][]
   cardLabelsMap?: Record<string, LabelDoc[] | undefined>
   cardAssigneesMap?: Record<string, BoardMemberUser[] | undefined>
   cardCommentsCountMap?: Record<string, number | undefined>
-  onRenameList: (listId: ListDoc['_id'], newTitle: string) => void
+  onRenameList: (listId: ListDoc['id'], newTitle: string) => void
   onDeleteList: (list: ListDoc) => void
-  onArchiveAllCards: (listId: ListDoc['_id']) => void
-  onAddCard: (listId: ListDoc['_id'], title: string) => void
-  onRenameCard: (cardId: CardDoc['_id'], title: string) => void
-  onArchiveCard: (cardId: CardDoc['_id']) => void
+  onArchiveAllCards: (listId: ListDoc['id']) => void
+  onAddCard: (listId: ListDoc['id'], title: string) => void
+  onRenameCard: (cardId: CardDoc['id'], title: string) => void
+  onArchiveCard: (cardId: CardDoc['id']) => void
   onCardClick?: (card: CardDoc) => void
-  onReorderList?: (listId: ListDoc['_id'], newPosition: number) => void
+  onReorderList?: (listId: ListDoc['id'], newPosition: number) => void
   onReorderCard?: (
-    cardId: CardDoc['_id'],
-    targetListId: ListDoc['_id'],
+    cardId: CardDoc['id'],
+    targetListId: ListDoc['id'],
     newPosition: number,
   ) => void
 }
@@ -145,10 +145,10 @@ function BoardListLane({
   return (
     <SortableContext items={listIds} strategy={horizontalListSortingStrategy}>
       {lists.map((list, index) => {
-        const listCards = cards.filter((c) => c.listId === list._id)
+        const listCards = cards.filter((c) => c.listId === list.id)
         return (
           <ListColumn
-            key={list._id}
+            key={list.id}
             list={list}
             cards={listCards}
             cardLabelsMap={cardLabelsMap}
@@ -174,10 +174,10 @@ function BoardListLane({
               }
             }}
             onMoveCardToTop={(cardId) => {
-              onReorderCard?.(cardId, list._id, 0)
+              onReorderCard?.(cardId, list.id, 0)
             }}
             onMoveCardToBottom={(cardId) => {
-              onReorderCard?.(cardId, list._id, listCards.length - 1)
+              onReorderCard?.(cardId, list.id, listCards.length - 1)
             }}
           />
         )
@@ -335,9 +335,9 @@ function BoardDragOverlay({
         <div className="rotate-2 scale-105 opacity-95 shadow-2xl pointer-events-none">
           <CardItem
             card={activeCard}
-            labels={cardLabelsMap[activeCard._id]}
-            assignees={cardAssigneesMap[activeCard._id]}
-            commentsCount={cardCommentsCountMap[activeCard._id]}
+            labels={cardLabelsMap[activeCard.id]}
+            assignees={cardAssigneesMap[activeCard.id]}
+            commentsCount={cardCommentsCountMap[activeCard.id]}
             isDraggingOverlay
           />
         </div>

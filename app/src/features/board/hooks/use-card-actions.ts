@@ -1,7 +1,7 @@
-import { useMutation } from 'convex/react'
+import { useBoardMutation } from '#/shared/api/use-board-mutation.ts'
+import { queryKeys } from '#/shared/api/query-keys.ts'
 import { toast } from 'sonner'
-import { api } from '../../../../convex/_generated/api'
-import type { Id } from '../../../../convex/_generated/dataModel'
+import { api } from '#/shared/api/client.ts'
 import {
   moveCardBetweenLists,
   moveCardToListEnd,
@@ -11,116 +11,103 @@ import {
 import type { CardDoc, ListDoc } from '#/features/board/types/board.types.ts'
 
 export interface CardActions {
-  addCard: (listId: ListDoc['_id'], title: string) => Promise<void>
-  renameCard: (cardId: CardDoc['_id'], newTitle: string) => Promise<void>
+  addCard: (listId: ListDoc['id'], title: string) => Promise<void>
+  renameCard: (cardId: CardDoc['id'], newTitle: string) => Promise<void>
   updateCardDescription: (
-    cardId: CardDoc['_id'],
+    cardId: CardDoc['id'],
     description: string,
   ) => Promise<void>
   updateCardDueDate: (
-    cardId: CardDoc['_id'],
+    cardId: CardDoc['id'],
     dueDate: number | undefined,
   ) => Promise<void>
   moveCardToList: (
-    cardId: CardDoc['_id'],
-    targetListId: ListDoc['_id'],
+    cardId: CardDoc['id'],
+    targetListId: ListDoc['id'],
   ) => Promise<void>
   reorderCard: (
-    cardId: CardDoc['_id'],
-    targetListId: ListDoc['_id'],
+    cardId: CardDoc['id'],
+    targetListId: ListDoc['id'],
     newPosition: number,
   ) => Promise<void>
-  archiveCard: (
-    cardId: CardDoc['_id'],
-    onArchived?: () => void,
-  ) => Promise<void>
-  restoreCard: (cardId: CardDoc['_id']) => Promise<void>
+  archiveCard: (cardId: CardDoc['id'], onArchived?: () => void) => Promise<void>
+  restoreCard: (cardId: CardDoc['id']) => Promise<void>
 }
 
-export function useCardActions(
-  boardId: Id<'boards'>,
-  listsCount = 0,
-): CardActions {
-  const createCardMutation = useMutation(api.cards.create)
-
-  const renameCardMutation = useMutation(api.cards.rename).withOptimisticUpdate(
-    (localStore, { cardId, title }) => {
-      const currentCards = localStore.getQuery(api.cards.listByBoard, {
-        boardId,
-      })
-      if (currentCards) {
-        localStore.setQuery(
-          api.cards.listByBoard,
-          { boardId },
-          currentCards.map((c) => (c._id === cardId ? { ...c, title } : c)),
-        )
-      }
+export function useCardActions(boardId: string, listsCount = 0): CardActions {
+  const resources = [
+    'cards',
+    'archivedCards',
+    'activity',
+    'cardActivity',
+  ] as const
+  const queryKey = queryKeys.resource(boardId, 'cards')
+  const createCardMutation = useBoardMutation({
+    boardId,
+    mutationFn: api.cards.create,
+    resources,
+  })
+  const renameCardMutation = useBoardMutation({
+    boardId,
+    mutationFn: api.cards.rename,
+    resources,
+    optimistic: {
+      queryKey,
+      update: (cards: CardDoc[], { cardId, title }) =>
+        cards.map((card) => (card.id === cardId ? { ...card, title } : card)),
     },
-  )
-
-  const reorderCardMutation = useMutation(
-    api.cards.reorder,
-  ).withOptimisticUpdate(
-    (localStore, { cardId, targetListId, newPosition }) => {
-      const currentCards = localStore.getQuery(api.cards.listByBoard, {
-        boardId,
-      })
-      if (!currentCards) return
-
-      const card = currentCards.find((c) => c._id === cardId)
-      if (!card) return
-
-      const sourceListId = card.listId
-      const isSameList = sourceListId === targetListId
-
-      if (isSameList) {
-        const updated = reorderCardsWithinList(
-          currentCards,
-          cardId,
-          sourceListId,
-          newPosition,
-        )
-        localStore.setQuery(api.cards.listByBoard, { boardId }, updated)
-      } else {
-        const updated = moveCardBetweenLists(
-          currentCards,
-          cardId,
-          targetListId,
-          newPosition,
-        )
-        localStore.setQuery(api.cards.listByBoard, { boardId }, updated)
-      }
+  })
+  const reorderCardMutation = useBoardMutation({
+    boardId,
+    mutationFn: api.cards.reorder,
+    resources,
+    optimistic: {
+      queryKey,
+      update: (cards: CardDoc[], { cardId, targetListId, newPosition }) => {
+        const card = cards.find((item) => item.id === cardId)
+        return card?.listId === targetListId
+          ? reorderCardsWithinList(cards, cardId, targetListId, newPosition)
+          : moveCardBetweenLists(cards, cardId, targetListId, newPosition)
+      },
     },
-  )
-
-  const updateCardDescriptionMutation = useMutation(api.cards.updateDescription)
-  const updateCardDueDateMutation = useMutation(api.cards.updateDueDate)
-
-  const archiveCardMutation = useMutation(
-    api.cards.archive,
-  ).withOptimisticUpdate((localStore, { cardId }) => {
-    const currentCards = localStore.getQuery(api.cards.listByBoard, {
-      boardId,
-    })
-    if (!currentCards) return
-    const updated = removeArchivedCard(currentCards, cardId)
-    localStore.setQuery(api.cards.listByBoard, { boardId }, updated)
+  })
+  const updateCardDescriptionMutation = useBoardMutation({
+    boardId,
+    mutationFn: api.cards.updateDescription,
+    resources,
+  })
+  const updateCardDueDateMutation = useBoardMutation({
+    boardId,
+    mutationFn: api.cards.updateDueDate,
+    resources,
+  })
+  const archiveCardMutation = useBoardMutation({
+    boardId,
+    mutationFn: api.cards.archive,
+    resources,
+    optimistic: {
+      queryKey,
+      update: (cards: CardDoc[], { cardId }) =>
+        removeArchivedCard(cards, cardId),
+    },
+  })
+  const restoreCardMutation = useBoardMutation({
+    boardId,
+    mutationFn: api.cards.restore,
+    resources,
+  })
+  const moveCardToListMutation = useBoardMutation({
+    boardId,
+    mutationFn: api.cards.moveToList,
+    resources,
+    optimistic: {
+      queryKey,
+      update: (cards: CardDoc[], { cardId, targetListId }) =>
+        moveCardToListEnd(cards, cardId, targetListId),
+    },
   })
 
-  const restoreCardMutation = useMutation(api.cards.restore)
-
-  const moveCardToListMutation = useMutation(
-    api.cards.moveToList,
-  ).withOptimisticUpdate((localStore, { cardId, targetListId }) => {
-    const currentCards = localStore.getQuery(api.cards.listByBoard, {
-      boardId,
-    })
-    if (!currentCards) return
-    const updated = moveCardToListEnd(currentCards, cardId, targetListId)
-    localStore.setQuery(api.cards.listByBoard, { boardId }, updated)
-  })
-
-  const addCard = async (listId: ListDoc['_id'], title: string) => {
+  const addCard = async (listId: ListDoc['id'], title: string) => {
     try {
       await createCardMutation({
         listId,
@@ -133,7 +120,7 @@ export function useCardActions(
     }
   }
 
-  const renameCard = async (cardId: CardDoc['_id'], newTitle: string) => {
+  const renameCard = async (cardId: CardDoc['id'], newTitle: string) => {
     try {
       await renameCardMutation({
         cardId,
@@ -146,7 +133,7 @@ export function useCardActions(
   }
 
   const updateCardDescription = async (
-    cardId: CardDoc['_id'],
+    cardId: CardDoc['id'],
     description: string,
   ) => {
     try {
@@ -164,7 +151,7 @@ export function useCardActions(
   }
 
   const updateCardDueDate = async (
-    cardId: CardDoc['_id'],
+    cardId: CardDoc['id'],
     dueDate: number | undefined,
   ) => {
     try {
@@ -181,8 +168,8 @@ export function useCardActions(
   }
 
   const moveCardToList = async (
-    cardId: CardDoc['_id'],
-    targetListId: ListDoc['_id'],
+    cardId: CardDoc['id'],
+    targetListId: ListDoc['id'],
   ) => {
     try {
       await moveCardToListMutation({
@@ -198,8 +185,8 @@ export function useCardActions(
   }
 
   const reorderCard = async (
-    cardId: CardDoc['_id'],
-    targetListId: ListDoc['_id'],
+    cardId: CardDoc['id'],
+    targetListId: ListDoc['id'],
     newPosition: number,
   ) => {
     try {
@@ -214,7 +201,7 @@ export function useCardActions(
     }
   }
 
-  const restoreCard = async (cardId: CardDoc['_id']) => {
+  const restoreCard = async (cardId: CardDoc['id']) => {
     try {
       if (listsCount === 0) {
         toast.error('Please create a list on the board before restoring cards.')
@@ -233,7 +220,7 @@ export function useCardActions(
   }
 
   const archiveCard = async (
-    cardId: CardDoc['_id'],
+    cardId: CardDoc['id'],
     onArchived?: () => void,
   ) => {
     try {

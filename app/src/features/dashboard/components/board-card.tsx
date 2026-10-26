@@ -19,7 +19,7 @@ export function BoardCard({ board }: BoardCardProps) {
   return (
     <Link
       to="/boards/$boardId"
-      params={{ boardId: board._id }}
+      params={{ boardId: board.id }}
       className="group flex flex-col justify-between rounded-2xl border border-border/70 bg-card p-5 transition-all duration-150 hover:border-foreground/20 hover:shadow-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
       <div className="flex flex-col gap-3">

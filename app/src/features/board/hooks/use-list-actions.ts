@@ -1,44 +1,61 @@
-import { useMutation } from 'convex/react'
+import { useBoardMutation } from '#/shared/api/use-board-mutation.ts'
+import { queryKeys } from '#/shared/api/query-keys.ts'
 import { toast } from 'sonner'
-import { api } from '../../../../convex/_generated/api'
-import type { Id } from '../../../../convex/_generated/dataModel'
+import { api } from '#/shared/api/client.ts'
 import { reorderLists } from '#/features/board/utils/board-transforms.ts'
 import type { ListDoc } from '#/features/board/types/board.types.ts'
 
 export interface ListActions {
   addList: (title: string) => Promise<void>
-  renameList: (listId: ListDoc['_id'], newTitle: string) => Promise<void>
-  reorderList: (listId: ListDoc['_id'], newPosition: number) => Promise<void>
+  renameList: (listId: ListDoc['id'], newTitle: string) => Promise<void>
+  reorderList: (listId: ListDoc['id'], newPosition: number) => Promise<void>
   deleteList: (list: ListDoc) => Promise<void>
-  archiveAllCards: (listId: ListDoc['_id']) => Promise<void>
+  archiveAllCards: (listId: ListDoc['id']) => Promise<void>
 }
 
-export function useListActions(boardId: Id<'boards'>): ListActions {
-  const createListMutation = useMutation(api.lists.create)
-
-  const renameListMutation = useMutation(api.lists.rename).withOptimisticUpdate(
-    (localStore, { listId, title }) => {
-      const currentLists = localStore.getQuery(api.lists.list, { boardId })
-      if (!currentLists) return
-      localStore.setQuery(
-        api.lists.list,
-        { boardId },
-        currentLists.map((l) => (l._id === listId ? { ...l, title } : l)),
-      )
-    },
-  )
-
-  const reorderListMutation = useMutation(
-    api.lists.reorder,
-  ).withOptimisticUpdate((localStore, { listId, newPosition }) => {
-    const currentLists = localStore.getQuery(api.lists.list, { boardId })
-    if (!currentLists) return
-    const reindexed = reorderLists(currentLists, listId, newPosition)
-    localStore.setQuery(api.lists.list, { boardId }, reindexed)
+export function useListActions(boardId: string): ListActions {
+  const resources = [
+    'lists',
+    'cards',
+    'archivedCards',
+    'activity',
+    'cardActivity',
+  ] as const
+  const createListMutation = useBoardMutation({
+    boardId,
+    mutationFn: api.lists.create,
+    resources,
   })
-
-  const deleteListMutation = useMutation(api.lists.remove)
-  const archiveAllCardsMutation = useMutation(api.lists.archiveAllCards)
+  const renameListMutation = useBoardMutation({
+    boardId,
+    mutationFn: api.lists.rename,
+    resources,
+    optimistic: {
+      queryKey: queryKeys.resource(boardId, 'lists'),
+      update: (lists: ListDoc[], { listId, title }) =>
+        lists.map((list) => (list.id === listId ? { ...list, title } : list)),
+    },
+  })
+  const reorderListMutation = useBoardMutation({
+    boardId,
+    mutationFn: api.lists.reorder,
+    resources,
+    optimistic: {
+      queryKey: queryKeys.resource(boardId, 'lists'),
+      update: (lists: ListDoc[], { listId, newPosition }) =>
+        reorderLists(lists, listId, newPosition),
+    },
+  })
+  const deleteListMutation = useBoardMutation({
+    boardId,
+    mutationFn: api.lists.remove,
+    resources,
+  })
+  const archiveAllCardsMutation = useBoardMutation({
+    boardId,
+    mutationFn: api.lists.archiveAllCards,
+    resources,
+  })
 
   const addList = async (title: string) => {
     try {
@@ -57,7 +74,7 @@ export function useListActions(boardId: Id<'boards'>): ListActions {
     }
   }
 
-  const renameList = async (listId: ListDoc['_id'], newTitle: string) => {
+  const renameList = async (listId: ListDoc['id'], newTitle: string) => {
     try {
       await renameListMutation({
         listId,
@@ -69,7 +86,7 @@ export function useListActions(boardId: Id<'boards'>): ListActions {
     }
   }
 
-  const reorderList = async (listId: ListDoc['_id'], newPosition: number) => {
+  const reorderList = async (listId: ListDoc['id'], newPosition: number) => {
     try {
       await reorderListMutation({
         listId,
@@ -84,16 +101,17 @@ export function useListActions(boardId: Id<'boards'>): ListActions {
   const deleteList = async (list: ListDoc) => {
     try {
       await deleteListMutation({
-        listId: list._id,
+        listId: list.id,
       })
       toast.success('List deleted')
     } catch (err) {
       console.error('Failed to delete list:', err)
       toast.error(err instanceof Error ? err.message : 'Failed to delete list.')
+      throw err
     }
   }
 
-  const archiveAllCards = async (listId: ListDoc['_id']) => {
+  const archiveAllCards = async (listId: ListDoc['id']) => {
     try {
       await archiveAllCardsMutation({
         listId,

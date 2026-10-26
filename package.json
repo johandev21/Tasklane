@@ -1,0 +1,15 @@
+{
+  "name": "tasklane",
+  "private": true,
+  "type": "module",
+  "workspaces": ["app", "api"],
+  "scripts": {
+    "dev": "bun scripts/dev.ts",
+    "build": "bun run --filter app build",
+    "typecheck": "bun run --filter '*' typecheck",
+    "lint": "bun run --filter app lint",
+    "check": "bun run --filter app check",
+    "format": "bun run --filter app format",
+    "test": "bun run --filter '*' test"
+  }
+}

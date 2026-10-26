@@ -1,19 +1,30 @@
-import { useMutation } from 'convex/react'
+import { useBoardMutation } from '#/shared/api/use-board-mutation.ts'
 import { toast } from 'sonner'
-import { api } from '../../../../convex/_generated/api'
-import type { Id } from '../../../../convex/_generated/dataModel'
+import { api } from '#/shared/api/client.ts'
 import type { CardDoc } from '#/features/board/types/board.types.ts'
 
 export interface MemberActions {
   inviteMember: (email: string) => Promise<void>
   removeMember: (userId: string) => Promise<void>
-  toggleCardAssignee: (cardId: CardDoc['_id'], userId: string) => Promise<void>
+  toggleCardAssignee: (cardId: CardDoc['id'], userId: string) => Promise<void>
 }
 
-export function useMemberActions(boardId: Id<'boards'>): MemberActions {
-  const inviteMemberMutation = useMutation(api.members.inviteByEmail)
-  const removeMemberMutation = useMutation(api.members.remove)
-  const toggleCardAssigneeMutation = useMutation(api.assignees.toggleOnCard)
+export function useMemberActions(boardId: string): MemberActions {
+  const inviteMemberMutation = useBoardMutation({
+    boardId,
+    mutationFn: api.members.inviteByEmail,
+    resources: ['members', 'assignees', 'presence', 'activity', 'cardActivity'],
+  })
+  const removeMemberMutation = useBoardMutation({
+    boardId,
+    mutationFn: api.members.remove,
+    resources: ['members', 'assignees', 'presence', 'activity', 'cardActivity'],
+  })
+  const toggleCardAssigneeMutation = useBoardMutation({
+    boardId,
+    mutationFn: api.assignees.toggleOnCard,
+    resources: ['members', 'assignees', 'presence', 'activity', 'cardActivity'],
+  })
 
   const inviteMember = async (email: string) => {
     await inviteMemberMutation({
@@ -29,7 +40,7 @@ export function useMemberActions(boardId: Id<'boards'>): MemberActions {
     })
   }
 
-  const toggleCardAssignee = async (cardId: CardDoc['_id'], userId: string) => {
+  const toggleCardAssignee = async (cardId: CardDoc['id'], userId: string) => {
     try {
       await toggleCardAssigneeMutation({
         cardId,

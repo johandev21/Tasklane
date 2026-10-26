@@ -1,31 +1,33 @@
 import { useNavigate } from '@tanstack/react-router'
-import { useMutation } from 'convex/react'
+import { useBoardMutation } from '#/shared/api/use-board-mutation.ts'
+import { queryKeys } from '#/shared/api/query-keys.ts'
+import type { BoardDoc } from '../types/board.types.ts'
 import { toast } from 'sonner'
-import { api } from '../../../../convex/_generated/api'
-import type { Id } from '../../../../convex/_generated/dataModel'
+import { api } from '#/shared/api/client.ts'
 
 export interface BoardActions {
   renameBoard: (name: string) => Promise<void>
   deleteBoard: () => Promise<void>
 }
 
-export function useBoardActions(boardId: Id<'boards'>): BoardActions {
+export function useBoardActions(boardId: string): BoardActions {
   const navigate = useNavigate()
 
-  const renameBoardMutation = useMutation(
-    api.boards.rename,
-  ).withOptimisticUpdate((localStore, { name }) => {
-    const currentBoard = localStore.getQuery(api.boards.get, { boardId })
-    if (currentBoard) {
-      localStore.setQuery(
-        api.boards.get,
-        { boardId },
-        { ...currentBoard, name },
-      )
-    }
+  const renameBoardMutation = useBoardMutation({
+    boardId,
+    mutationFn: api.boards.rename,
+    resources: ['board', 'activity'],
+    optimistic: {
+      queryKey: queryKeys.resource(boardId, 'board'),
+      update: (board: BoardDoc | null, { name }) =>
+        board ? { ...board, name } : board,
+    },
   })
-
-  const deleteBoardMutation = useMutation(api.boards.remove)
+  const deleteBoardMutation = useBoardMutation({
+    boardId,
+    mutationFn: api.boards.remove,
+    resources: ['board'],
+  })
 
   const renameBoard = async (name: string) => {
     try {

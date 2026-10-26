@@ -1,1 +1,1 @@
-export * from './api/convex-client.ts'
+export { authClient } from './api/auth.ts'

@@ -1,27 +1,43 @@
-import { useMutation } from 'convex/react'
+import { useBoardMutation } from '#/shared/api/use-board-mutation.ts'
 import { toast } from 'sonner'
-import { api } from '../../../../convex/_generated/api'
-import type { Id } from '../../../../convex/_generated/dataModel'
+import { api } from '#/shared/api/client.ts'
 import type { CardDoc, LabelDoc } from '#/features/board/types/board.types.ts'
+import type { LabelColorKey } from '#/features/board/utils/label-colors.ts'
 
 export interface LabelActions {
-  createLabel: (name: string, color: string) => Promise<void>
+  createLabel: (name: string, color: LabelColorKey) => Promise<void>
   updateLabel: (
-    labelId: LabelDoc['_id'],
+    labelId: LabelDoc['id'],
     name?: string,
-    color?: string,
+    color?: LabelColorKey,
   ) => Promise<void>
-  removeLabel: (labelId: LabelDoc['_id']) => Promise<void>
-  toggleCardLabel: (cardId: CardDoc['_id'], label: LabelDoc) => Promise<void>
+  removeLabel: (labelId: LabelDoc['id']) => Promise<void>
+  toggleCardLabel: (cardId: CardDoc['id'], label: LabelDoc) => Promise<void>
 }
 
-export function useLabelActions(boardId: Id<'boards'>): LabelActions {
-  const createLabelMutation = useMutation(api.labels.create)
-  const updateLabelMutation = useMutation(api.labels.update)
-  const removeLabelMutation = useMutation(api.labels.remove)
-  const toggleCardLabelMutation = useMutation(api.labels.toggleOnCard)
+export function useLabelActions(boardId: string): LabelActions {
+  const createLabelMutation = useBoardMutation({
+    boardId,
+    mutationFn: api.labels.create,
+    resources: ['labels', 'cardLabels', 'activity', 'cardActivity'],
+  })
+  const updateLabelMutation = useBoardMutation({
+    boardId,
+    mutationFn: api.labels.update,
+    resources: ['labels', 'cardLabels', 'activity', 'cardActivity'],
+  })
+  const removeLabelMutation = useBoardMutation({
+    boardId,
+    mutationFn: api.labels.remove,
+    resources: ['labels', 'cardLabels', 'activity', 'cardActivity'],
+  })
+  const toggleCardLabelMutation = useBoardMutation({
+    boardId,
+    mutationFn: api.labels.toggleOnCard,
+    resources: ['labels', 'cardLabels', 'activity', 'cardActivity'],
+  })
 
-  const createLabel = async (name: string, color: string) => {
+  const createLabel = async (name: string, color: LabelColorKey) => {
     try {
       await createLabelMutation({
         boardId,
@@ -39,9 +55,9 @@ export function useLabelActions(boardId: Id<'boards'>): LabelActions {
   }
 
   const updateLabel = async (
-    labelId: LabelDoc['_id'],
+    labelId: LabelDoc['id'],
     name?: string,
-    color?: string,
+    color?: LabelColorKey,
   ) => {
     try {
       await updateLabelMutation({
@@ -59,7 +75,7 @@ export function useLabelActions(boardId: Id<'boards'>): LabelActions {
     }
   }
 
-  const removeLabel = async (labelId: LabelDoc['_id']) => {
+  const removeLabel = async (labelId: LabelDoc['id']) => {
     try {
       await removeLabelMutation({
         labelId,
@@ -74,11 +90,11 @@ export function useLabelActions(boardId: Id<'boards'>): LabelActions {
     }
   }
 
-  const toggleCardLabel = async (cardId: CardDoc['_id'], label: LabelDoc) => {
+  const toggleCardLabel = async (cardId: CardDoc['id'], label: LabelDoc) => {
     try {
       await toggleCardLabelMutation({
         cardId,
-        labelId: label._id,
+        labelId: label.id,
       })
     } catch (err) {
       console.error('Failed to toggle label:', err)

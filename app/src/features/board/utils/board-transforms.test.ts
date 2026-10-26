@@ -1,5 +1,4 @@
 import { describe, it, expect } from 'vitest'
-import type { Id } from '../../../../convex/_generated/dataModel'
 import type {
   CardDoc,
   EnrichedActivityDoc,
@@ -24,44 +23,44 @@ import {
 } from '#/features/board/utils/board-transforms.ts'
 
 describe('board-transforms', () => {
-  const listAId = 'list_a' as Id<'lists'>
-  const listBId = 'list_b' as Id<'lists'>
-  const listCId = 'list_c' as Id<'lists'>
-  const boardId = 'board_1' as Id<'boards'>
+  const listAId = 'list_a'
+  const listBId = 'list_b'
+  const listCId = 'list_c'
+  const boardId = 'board_1'
 
   const mockLists: ListDoc[] = [
     {
-      _id: listAId,
-      _creationTime: 1000,
+      id: listAId,
+      createdAt: 1000,
       boardId,
       title: 'To Do',
       position: 0,
     },
     {
-      _id: listBId,
-      _creationTime: 1001,
+      id: listBId,
+      createdAt: 1001,
       boardId,
       title: 'In Progress',
       position: 1,
     },
     {
-      _id: listCId,
-      _creationTime: 1002,
+      id: listCId,
+      createdAt: 1002,
       boardId,
       title: 'Done',
       position: 2,
     },
   ]
 
-  const card1Id = 'card_1' as Id<'cards'>
-  const card2Id = 'card_2' as Id<'cards'>
-  const card3Id = 'card_3' as Id<'cards'>
-  const card4Id = 'card_4' as Id<'cards'>
+  const card1Id = 'card_1'
+  const card2Id = 'card_2'
+  const card3Id = 'card_3'
+  const card4Id = 'card_4'
 
   const mockCards: CardDoc[] = [
     {
-      _id: card1Id,
-      _creationTime: 2000,
+      id: card1Id,
+      createdAt: 2000,
       boardId,
       listId: listAId,
       title: 'Card 1',
@@ -69,8 +68,8 @@ describe('board-transforms', () => {
       archived: false,
     },
     {
-      _id: card2Id,
-      _creationTime: 2001,
+      id: card2Id,
+      createdAt: 2001,
       boardId,
       listId: listAId,
       title: 'Card 2',
@@ -78,8 +77,8 @@ describe('board-transforms', () => {
       archived: false,
     },
     {
-      _id: card3Id,
-      _creationTime: 2002,
+      id: card3Id,
+      createdAt: 2002,
       boardId,
       listId: listBId,
       title: 'Card 3',
@@ -87,8 +86,8 @@ describe('board-transforms', () => {
       archived: false,
     },
     {
-      _id: card4Id,
-      _creationTime: 2003,
+      id: card4Id,
+      createdAt: 2003,
       boardId,
       listId: listBId,
       title: 'Card 4',
@@ -100,12 +99,12 @@ describe('board-transforms', () => {
   describe('reorderLists', () => {
     it('moves a list to a new position and re-indexes sequentially', () => {
       const result = reorderLists(mockLists, listAId, 2)
-      expect(result.map((l) => l._id)).toEqual([listBId, listCId, listAId])
+      expect(result.map((l) => l.id)).toEqual([listBId, listCId, listAId])
       expect(result.map((l) => l.position)).toEqual([0, 1, 2])
     })
 
     it('returns unchanged list if listId is not found', () => {
-      const result = reorderLists(mockLists, 'unknown' as Id<'lists'>, 1)
+      const result = reorderLists(mockLists, 'unknown', 1)
       expect(result).toEqual(mockLists)
     })
   })
@@ -114,17 +113,12 @@ describe('board-transforms', () => {
     it('reorders active cards within the same list', () => {
       const result = reorderCardsWithinList(mockCards, card2Id, listAId, 0)
       const listACards = result.filter((c) => c.listId === listAId)
-      expect(listACards.map((c) => c._id)).toEqual([card2Id, card1Id])
+      expect(listACards.map((c) => c.id)).toEqual([card2Id, card1Id])
       expect(listACards.map((c) => c.position)).toEqual([0, 1])
     })
 
     it('ignores unknown card ID', () => {
-      const result = reorderCardsWithinList(
-        mockCards,
-        'unknown' as Id<'cards'>,
-        listAId,
-        0,
-      )
+      const result = reorderCardsWithinList(mockCards, 'unknown', listAId, 0)
       expect(result).toEqual(mockCards)
     })
   })
@@ -137,10 +131,10 @@ describe('board-transforms', () => {
         (c) => c.listId === listBId && !c.archived,
       )
 
-      expect(listACards.map((c) => c._id)).toEqual([card2Id])
+      expect(listACards.map((c) => c.id)).toEqual([card2Id])
       expect(listACards[0].position).toBe(0)
 
-      expect(listBCards.map((c) => c._id)).toEqual([card1Id, card3Id])
+      expect(listBCards.map((c) => c.id)).toEqual([card1Id, card3Id])
       expect(listBCards[0].position).toBe(0)
       expect(listBCards[1].position).toBe(1)
     })
@@ -152,7 +146,7 @@ describe('board-transforms', () => {
       const listBCards = result.filter(
         (c) => c.listId === listBId && !c.archived,
       )
-      expect(listBCards.map((c) => c._id)).toEqual([card3Id, card1Id])
+      expect(listBCards.map((c) => c.id)).toEqual([card3Id, card1Id])
       expect(listBCards[1].position).toBe(1)
     })
 
@@ -165,7 +159,7 @@ describe('board-transforms', () => {
   describe('removeArchivedCard', () => {
     it('filters out the specified card', () => {
       const result = removeArchivedCard(mockCards, card1Id)
-      expect(result.some((c) => c._id === card1Id)).toBe(false)
+      expect(result.some((c) => c.id === card1Id)).toBe(false)
       expect(result.length).toBe(mockCards.length - 1)
     })
   })
@@ -173,15 +167,15 @@ describe('board-transforms', () => {
   describe('groupCardLabelsByCard & groupCardAssigneesByCard', () => {
     it('groups labels by cardId', () => {
       const label1: LabelDoc = {
-        _id: 'l1' as Id<'labels'>,
-        _creationTime: 100,
+        id: 'l1',
+        createdAt: 100,
         boardId,
         name: 'Urgent',
         color: 'red',
       }
       const label2: LabelDoc = {
-        _id: 'l2' as Id<'labels'>,
-        _creationTime: 101,
+        id: 'l2',
+        createdAt: 101,
         boardId,
         name: 'Feature',
         color: 'blue',
@@ -220,8 +214,8 @@ describe('board-transforms', () => {
   describe('getCardFeedItems', () => {
     it('combines comments and activities, sorted newest first', () => {
       const comment: EnrichedComment = {
-        _id: 'c1' as Id<'comments'>,
-        _creationTime: 500,
+        id: 'c1',
+        createdAt: 500,
         cardId: card1Id,
         authorId: 'u1',
         body: 'Hello',
@@ -233,8 +227,8 @@ describe('board-transforms', () => {
         },
       }
       const activity: EnrichedActivityDoc = {
-        _id: 'a1' as Id<'activity'>,
-        _creationTime: 600,
+        id: 'a1',
+        createdAt: 600,
         boardId,
         actorId: 'u1',
         type: 'card_created',
@@ -265,8 +259,8 @@ describe('board-transforms', () => {
   describe('formatActivityMessage & formatCardActivityMessage', () => {
     it('formats board creation and card rename', () => {
       const act1: EnrichedActivityDoc = {
-        _id: 'a1' as Id<'activity'>,
-        _creationTime: 100,
+        id: 'a1',
+        createdAt: 100,
         boardId,
         actorId: 'u1',
         type: 'board_created',
@@ -275,8 +269,8 @@ describe('board-transforms', () => {
       expect(formatActivityMessage(act1)).toBe('created board "My Board"')
 
       const act2: EnrichedActivityDoc = {
-        _id: 'a2' as Id<'activity'>,
-        _creationTime: 100,
+        id: 'a2',
+        createdAt: 100,
         boardId,
         actorId: 'u1',
         type: 'card_renamed',

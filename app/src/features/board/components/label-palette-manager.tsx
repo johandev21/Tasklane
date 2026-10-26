@@ -16,13 +16,13 @@ import type { LabelDoc } from '#/features/board/types/board.types.ts'
 export interface LabelPaletteManagerProps {
   labels: LabelDoc[]
   isOwner: boolean
-  onCreateLabel?: (name: string, color: string) => Promise<void> | void
+  onCreateLabel?: (name: string, color: LabelColorKey) => Promise<void> | void
   onUpdateLabel?: (
-    labelId: LabelDoc['_id'],
+    labelId: LabelDoc['id'],
     name?: string,
-    color?: string,
+    color?: LabelColorKey,
   ) => Promise<void> | void
-  onRemoveLabel?: (labelId: LabelDoc['_id']) => Promise<void> | void
+  onRemoveLabel?: (labelId: LabelDoc['id']) => Promise<void> | void
 }
 
 export function LabelPaletteManager({
@@ -32,7 +32,7 @@ export function LabelPaletteManager({
   onUpdateLabel,
   onRemoveLabel,
 }: LabelPaletteManagerProps) {
-  const [editingLabelId, setEditingLabelId] = useState<LabelDoc['_id'] | null>(
+  const [editingLabelId, setEditingLabelId] = useState<LabelDoc['id'] | null>(
     null,
   )
   const [editName, setEditName] = useState('')
@@ -43,9 +43,9 @@ export function LabelPaletteManager({
   const [deletingLabel, setDeletingLabel] = useState<LabelDoc | null>(null)
 
   const handleStartEdit = (label: LabelDoc) => {
-    setEditingLabelId(label._id)
+    setEditingLabelId(label.id)
     setEditName(label.name)
-    setEditColor(label.color as LabelColorKey)
+    setEditColor(label.color)
     setEditError(null)
   }
 
@@ -67,7 +67,7 @@ export function LabelPaletteManager({
 
   const handleDeleteConfirm = async () => {
     if (deletingLabel) {
-      await onRemoveLabel?.(deletingLabel._id)
+      await onRemoveLabel?.(deletingLabel.id)
       setDeletingLabel(null)
     }
   }
@@ -132,7 +132,7 @@ function LabelPaletteHeader({ count }: { count: number }) {
 interface LabelPaletteListProps {
   labels: LabelDoc[]
   isOwner: boolean
-  editingLabelId: LabelDoc['_id'] | null
+  editingLabelId: LabelDoc['id'] | null
   editName: string
   editColor: LabelColorKey
   editError: string | null
@@ -171,9 +171,9 @@ function LabelPaletteList({
   return (
     <div className="flex flex-col gap-2">
       {labels.map((label) =>
-        editingLabelId === label._id ? (
+        editingLabelId === label.id ? (
           <LabelPaletteEditor
-            key={label._id}
+            key={label.id}
             name={editName}
             color={editColor}
             error={editError}
@@ -185,7 +185,7 @@ function LabelPaletteList({
           />
         ) : (
           <LabelPaletteRow
-            key={label._id}
+            key={label.id}
             label={label}
             isOwner={isOwner}
             onStartEdit={() => onStartEdit(label)}
@@ -327,7 +327,7 @@ function LabelPaletteEditor({
 interface LabelPaletteCreateSectionProps {
   isOwner: boolean
   labelsCount: number
-  onCreateLabel?: (name: string, color: string) => Promise<void> | void
+  onCreateLabel?: (name: string, color: LabelColorKey) => Promise<void> | void
 }
 
 function LabelPaletteCreateSection({

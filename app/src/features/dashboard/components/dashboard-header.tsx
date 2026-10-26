@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router'
-import { UserButton } from '@clerk/tanstack-react-start'
+import { UserMenu } from '#/features/auth'
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -35,13 +35,7 @@ export function DashboardHeader() {
 
         <div className="flex items-center gap-2.5">
           <ModeToggle />
-          <UserButton
-            appearance={{
-              elements: {
-                avatarBox: 'size-8 rounded-full ring-1 ring-border',
-              },
-            }}
-          />
+          <UserMenu />
         </div>
       </div>
     </header>

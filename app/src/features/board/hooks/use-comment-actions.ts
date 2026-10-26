@@ -1,20 +1,32 @@
-import { useMutation } from 'convex/react'
+import { useBoardMutation } from '#/shared/api/use-board-mutation.ts'
 import { toast } from 'sonner'
-import { api } from '../../../../convex/_generated/api'
+import { api } from '#/shared/api/client.ts'
 import type { CardDoc, CommentDoc } from '#/features/board/types/board.types.ts'
 
 export interface CommentActions {
-  addComment: (cardId: CardDoc['_id'], body: string) => Promise<void>
-  updateComment: (commentId: CommentDoc['_id'], body: string) => Promise<void>
-  deleteComment: (commentId: CommentDoc['_id']) => Promise<void>
+  addComment: (cardId: CardDoc['id'], body: string) => Promise<void>
+  updateComment: (commentId: CommentDoc['id'], body: string) => Promise<void>
+  deleteComment: (commentId: CommentDoc['id']) => Promise<void>
 }
 
-export function useCommentActions(): CommentActions {
-  const addCommentMutation = useMutation(api.comments.add)
-  const updateCommentMutation = useMutation(api.comments.update)
-  const deleteCommentMutation = useMutation(api.comments.remove)
+export function useCommentActions(boardId: string): CommentActions {
+  const addCommentMutation = useBoardMutation({
+    boardId,
+    mutationFn: api.comments.add,
+    resources: ['comments', 'commentCounts', 'activity', 'cardActivity'],
+  })
+  const updateCommentMutation = useBoardMutation({
+    boardId,
+    mutationFn: api.comments.update,
+    resources: ['comments', 'commentCounts', 'activity', 'cardActivity'],
+  })
+  const deleteCommentMutation = useBoardMutation({
+    boardId,
+    mutationFn: api.comments.remove,
+    resources: ['comments', 'commentCounts', 'activity', 'cardActivity'],
+  })
 
-  const addComment = async (cardId: CardDoc['_id'], body: string) => {
+  const addComment = async (cardId: CardDoc['id'], body: string) => {
     try {
       await addCommentMutation({
         cardId,
@@ -29,7 +41,7 @@ export function useCommentActions(): CommentActions {
     }
   }
 
-  const updateComment = async (commentId: CommentDoc['_id'], body: string) => {
+  const updateComment = async (commentId: CommentDoc['id'], body: string) => {
     try {
       await updateCommentMutation({
         commentId,
@@ -45,7 +57,7 @@ export function useCommentActions(): CommentActions {
     }
   }
 
-  const deleteComment = async (commentId: CommentDoc['_id']) => {
+  const deleteComment = async (commentId: CommentDoc['id']) => {
     try {
       await deleteCommentMutation({
         commentId,

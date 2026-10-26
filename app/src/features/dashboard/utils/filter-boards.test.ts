@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest'
-import type { Id } from '../../../../convex/_generated/dataModel'
 import { filterBoards } from './filter-boards.ts'
 import type { BoardSummary } from '../types/dashboard.types.ts'
 
@@ -9,11 +8,12 @@ function createMockBoard(
   isOwner: boolean,
 ): BoardSummary {
   return {
-    _id: id as Id<'boards'>,
-    _creationTime: Date.now(),
+    id: id,
+    createdAt: Date.now(),
     name,
     ownerId: isOwner ? 'user-1' : 'user-2',
     listsCount: 3,
+    lists: [],
     cardsCount: 5,
     memberCount: isOwner ? 1 : 2,
     isOwner,
@@ -38,14 +38,14 @@ describe('filterBoards', () => {
     const result = filterBoards(mockBoards, 'owned')
     expect(result).toHaveLength(2)
     expect(result.every((b) => b.isOwner)).toBe(true)
-    expect(result.map((b) => b._id)).toEqual(['b1', 'b3'])
+    expect(result.map((b) => b.id)).toEqual(['b1', 'b3'])
   })
 
   it('returns only shared boards when filterMode is shared', () => {
     const result = filterBoards(mockBoards, 'shared')
     expect(result).toHaveLength(2)
     expect(result.every((b) => !b.isOwner)).toBe(true)
-    expect(result.map((b) => b._id)).toEqual(['b2', 'b4'])
+    expect(result.map((b) => b.id)).toEqual(['b2', 'b4'])
   })
 
   it('handles empty boards list gracefully', () => {

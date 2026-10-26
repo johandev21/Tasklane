@@ -26,9 +26,7 @@ export function SignInRequired({
         </EmptyHeader>
         <EmptyContent>
           <Button asChild>
-            <Link to="/sign-in/$" params={{ _splat: '' }}>
-              Sign In
-            </Link>
+            <Link to="/sign-in">Sign In</Link>
           </Button>
         </EmptyContent>
       </Empty>

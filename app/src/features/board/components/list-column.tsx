@@ -42,17 +42,17 @@ export interface ListColumnProps {
   isDraggingOverlay?: boolean
   isFirst?: boolean
   isLast?: boolean
-  onRenameList?: (listId: ListDoc['_id'], newTitle: string) => void
+  onRenameList?: (listId: ListDoc['id'], newTitle: string) => void
   onDeleteList?: (list: ListDoc) => void
-  onArchiveAllCards?: (listId: ListDoc['_id']) => void
-  onAddCard?: (listId: ListDoc['_id'], title: string) => void
-  onRenameCard?: (cardId: CardDoc['_id'], title: string) => void
-  onArchiveCard?: (cardId: CardDoc['_id']) => void
+  onArchiveAllCards?: (listId: ListDoc['id']) => void
+  onAddCard?: (listId: ListDoc['id'], title: string) => void
+  onRenameCard?: (cardId: CardDoc['id'], title: string) => void
+  onArchiveCard?: (cardId: CardDoc['id']) => void
   onCardClick?: (card: CardDoc) => void
-  onMoveListLeft?: (listId: ListDoc['_id']) => void
-  onMoveListRight?: (listId: ListDoc['_id']) => void
-  onMoveCardToTop?: (cardId: CardDoc['_id']) => void
-  onMoveCardToBottom?: (cardId: CardDoc['_id']) => void
+  onMoveListLeft?: (listId: ListDoc['id']) => void
+  onMoveListRight?: (listId: ListDoc['id']) => void
+  onMoveCardToTop?: (cardId: CardDoc['id']) => void
+  onMoveCardToBottom?: (cardId: CardDoc['id']) => void
 }
 
 export const ListColumn = memo(function ListColumn({
@@ -84,9 +84,9 @@ export const ListColumn = memo(function ListColumn({
   const sortableData = useMemo(
     () => ({
       type: 'list' as const,
-      listId: list._id,
+      listId: list.id,
     }),
-    [list._id],
+    [list.id],
   )
 
   const {
@@ -97,7 +97,7 @@ export const ListColumn = memo(function ListColumn({
     transition,
     isDragging,
   } = useSortable({
-    id: list._id,
+    id: list.id,
     data: sortableData,
     disabled: isEditingTitle || isDraggingOverlay,
   })
@@ -109,12 +109,12 @@ export const ListColumn = memo(function ListColumn({
         transition,
       }
 
-  const cardIds = useMemo(() => cards.map((c) => c._id), [cards])
+  const cardIds = useMemo(() => cards.map((c) => c.id), [cards])
 
   const handleTitleSubmit = () => {
     const trimmed = titleValue.trim()
     if (trimmed && trimmed !== list.title) {
-      onRenameList?.(list._id, trimmed)
+      onRenameList?.(list.id, trimmed)
     } else {
       setTitleValue(list.title)
     }
@@ -164,10 +164,10 @@ export const ListColumn = memo(function ListColumn({
           onOpenArchiveDialog={() => setIsArchiveDialogOpen(true)}
           onDeleteList={() => onDeleteList?.(list)}
           onMoveListLeft={
-            onMoveListLeft ? () => onMoveListLeft(list._id) : undefined
+            onMoveListLeft ? () => onMoveListLeft(list.id) : undefined
           }
           onMoveListRight={
-            onMoveListRight ? () => onMoveListRight(list._id) : undefined
+            onMoveListRight ? () => onMoveListRight(list.id) : undefined
           }
         />
 
@@ -187,7 +187,7 @@ export const ListColumn = memo(function ListColumn({
 
         {!isDraggingOverlay && (
           <ListColumnFooter
-            listId={list._id}
+            listId={list.id}
             isComposerOpen={isComposerOpen}
             onOpenComposer={() => setIsComposerOpen(true)}
             onCloseComposer={() => setIsComposerOpen(false)}
@@ -201,7 +201,7 @@ export const ListColumn = memo(function ListColumn({
         cardCount={cards.length}
         isOpen={isArchiveDialogOpen}
         onClose={() => setIsArchiveDialogOpen(false)}
-        onConfirm={() => onArchiveAllCards?.(list._id)}
+        onConfirm={() => onArchiveAllCards?.(list.id)}
       />
     </>
   )
@@ -490,16 +490,16 @@ function ListActionsMenu({
 
 interface ListColumnBodyProps {
   cards: CardDoc[]
-  cardIds: CardDoc['_id'][]
+  cardIds: CardDoc['id'][]
   cardLabelsMap: Record<string, LabelDoc[] | undefined>
   cardAssigneesMap: Record<string, BoardMemberUser[] | undefined>
   cardCommentsCountMap: Record<string, number | undefined>
   isDraggingOverlay: boolean
-  onRenameCard?: (cardId: CardDoc['_id'], title: string) => void
-  onArchiveCard?: (cardId: CardDoc['_id']) => void
+  onRenameCard?: (cardId: CardDoc['id'], title: string) => void
+  onArchiveCard?: (cardId: CardDoc['id']) => void
   onCardClick?: (card: CardDoc) => void
-  onMoveCardToTop?: (cardId: CardDoc['_id']) => void
-  onMoveCardToBottom?: (cardId: CardDoc['_id']) => void
+  onMoveCardToTop?: (cardId: CardDoc['id']) => void
+  onMoveCardToBottom?: (cardId: CardDoc['id']) => void
 }
 
 function ListColumnBody({
@@ -520,11 +520,11 @@ function ListColumnBody({
       {isDraggingOverlay ? (
         cards.map((card) => (
           <CardItem
-            key={card._id}
+            key={card.id}
             card={card}
-            labels={cardLabelsMap[card._id]}
-            assignees={cardAssigneesMap[card._id]}
-            commentsCount={cardCommentsCountMap[card._id]}
+            labels={cardLabelsMap[card.id]}
+            assignees={cardAssigneesMap[card.id]}
+            commentsCount={cardCommentsCountMap[card.id]}
             isDraggingOverlay
           />
         ))
@@ -532,11 +532,11 @@ function ListColumnBody({
         <SortableContext items={cardIds} strategy={verticalListSortingStrategy}>
           {cards.map((card) => (
             <CardItem
-              key={card._id}
+              key={card.id}
               card={card}
-              labels={cardLabelsMap[card._id]}
-              assignees={cardAssigneesMap[card._id]}
-              commentsCount={cardCommentsCountMap[card._id]}
+              labels={cardLabelsMap[card.id]}
+              assignees={cardAssigneesMap[card.id]}
+              commentsCount={cardCommentsCountMap[card.id]}
               onRenameCard={onRenameCard}
               onArchiveCard={onArchiveCard}
               onCardClick={onCardClick}
@@ -561,11 +561,11 @@ function ListEmptyDropZone() {
 }
 
 interface ListColumnFooterProps {
-  listId: ListDoc['_id']
+  listId: ListDoc['id']
   isComposerOpen: boolean
   onOpenComposer: () => void
   onCloseComposer: () => void
-  onAddCard?: (listId: ListDoc['_id'], title: string) => void
+  onAddCard?: (listId: ListDoc['id'], title: string) => void
 }
 
 function ListColumnFooter({

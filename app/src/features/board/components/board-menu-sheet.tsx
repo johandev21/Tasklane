@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { RotateCcw, Loader2, Trash2 } from 'lucide-react'
-import { usePaginatedQuery } from 'convex/react'
-import { api } from '../../../../convex/_generated/api'
-import type { Id } from '../../../../convex/_generated/dataModel'
+import { useInfiniteQuery } from '@tanstack/react-query'
+import { api } from '#/shared/api/client.ts'
+import { queryKeys } from '#/shared/api/query-keys.ts'
 import {
   Sheet,
   SheetContent,
@@ -37,9 +37,10 @@ import type {
   LabelDoc,
   PresenceViewer,
 } from '#/features/board/types/board.types.ts'
+import type { LabelColorKey } from '#/features/board/utils/label-colors.ts'
 
 export interface BoardMenuSheetProps {
-  boardId?: Id<'boards'>
+  boardId?: string
   boardTitle?: string
   presence?: PresenceViewer[]
   activities?: EnrichedActivityDoc[]
@@ -48,14 +49,14 @@ export interface BoardMenuSheetProps {
   isOwner?: boolean
   isOpen: boolean
   onClose: () => void
-  onRestoreCard?: (cardId: CardDoc['_id']) => void
-  onCreateLabel?: (name: string, color: string) => Promise<void> | void
+  onRestoreCard?: (cardId: CardDoc['id']) => void
+  onCreateLabel?: (name: string, color: LabelColorKey) => Promise<void> | void
   onUpdateLabel?: (
-    labelId: LabelDoc['_id'],
+    labelId: LabelDoc['id'],
     name?: string,
-    color?: string,
+    color?: LabelColorKey,
   ) => Promise<void> | void
-  onRemoveLabel?: (labelId: LabelDoc['_id']) => Promise<void> | void
+  onRemoveLabel?: (labelId: LabelDoc['id']) => Promise<void> | void
   onDeleteBoard?: () => Promise<void>
 }
 
@@ -76,23 +77,36 @@ export function BoardMenuSheet({
   onDeleteBoard,
 }: BoardMenuSheetProps) {
   const [isDeleteBoardOpen, setIsDeleteBoardOpen] = useState(false)
-  const {
-    results: paginatedActivities,
-    status: activityStatus,
-    loadMore: loadMoreActivity,
-    isLoading: isActivityLoading,
-  } = usePaginatedQuery(
-    api.activity.listPaginated,
-    isOpen && boardId ? { boardId } : 'skip',
-    { initialNumItems: 20 },
-  )
+  const activityQuery = useInfiniteQuery({
+    queryKey: queryKeys.resource(boardId ?? '', 'activity'),
+    queryFn: ({ pageParam, signal }) =>
+      api.activity.listPaginated(boardId!, pageParam, signal),
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (lastPage) =>
+      lastPage.isDone ? undefined : lastPage.continueCursor,
+    enabled: isOpen && Boolean(boardId) && !directActivities,
+  })
+  const paginatedActivities =
+    activityQuery.data?.pages.flatMap((page) => page.page) ?? []
+  const activityStatus = activityQuery.isPending
+    ? 'LoadingFirstPage'
+    : activityQuery.isFetchingNextPage
+      ? 'LoadingMore'
+      : activityQuery.hasNextPage
+        ? 'CanLoadMore'
+        : 'Exhausted'
+  const loadMoreActivity = () => {
+    if (activityQuery.hasNextPage && !activityQuery.isFetchingNextPage) {
+      void activityQuery.fetchNextPage()
+    }
+  }
 
   const activities = directActivities ?? paginatedActivities
 
   const { sentinelRef } = useInfiniteScroll({
-    onLoadMore: () => loadMoreActivity(20),
+    onLoadMore: loadMoreActivity,
     canLoadMore: activityStatus === 'CanLoadMore',
-    isLoading: isActivityLoading,
+    isLoading: activityQuery.isFetchingNextPage,
     disabled: !isOpen || !boardId || Boolean(directActivities),
   })
 
@@ -146,7 +160,9 @@ export function BoardMenuSheet({
                 activities={activities}
                 status={activityStatus}
                 sentinelRef={sentinelRef}
-                onLoadMore={() => loadMoreActivity(20)}
+                error={activityQuery.error}
+                onRetry={() => void activityQuery.refetch()}
+                onLoadMore={loadMoreActivity}
               />
             </TabsContent>
 
@@ -229,6 +245,8 @@ interface BoardActivityTabContentProps {
   activities: EnrichedActivityDoc[]
   status: string
   sentinelRef: React.RefObject<HTMLDivElement | null>
+  error: Error | null
+  onRetry: () => void
   onLoadMore: () => void
 }
 
@@ -236,10 +254,23 @@ function BoardActivityTabContent({
   activities,
   status,
   sentinelRef,
+  error,
+  onRetry,
   onLoadMore,
 }: BoardActivityTabContentProps) {
   return (
     <>
+      {error && (
+        <div
+          role="alert"
+          className="flex items-center justify-between gap-3 rounded-lg border border-destructive/30 p-3 text-sm"
+        >
+          <span>Activity could not be refreshed.</span>
+          <Button type="button" variant="outline" size="xs" onClick={onRetry}>
+            Retry
+          </Button>
+        </div>
+      )}
       {status === 'LoadingFirstPage' && activities.length === 0 && (
         <div className="flex flex-col gap-4 animate-pulse">
           {[1, 2, 3].map((n) => (
@@ -255,7 +286,7 @@ function BoardActivityTabContent({
       )}
 
       {activities.map((act) => (
-        <BoardActivityItem key={act._id} activity={act} />
+        <BoardActivityItem key={act.id} activity={act} />
       ))}
 
       {status === 'LoadingMore' && (
@@ -319,7 +350,7 @@ function BoardActivityItem({ activity }: { activity: EnrichedActivityDoc }) {
           <span className="text-muted-foreground">{message}</span>
         </p>
         <span className="text-xs text-muted-foreground block font-mono">
-          {formatRelativeTime(activity._creationTime)}
+          {formatRelativeTime(activity.createdAt)}
         </span>
       </div>
     </div>
@@ -328,7 +359,7 @@ function BoardActivityItem({ activity }: { activity: EnrichedActivityDoc }) {
 
 interface ArchivedCardsTabContentProps {
   archivedCards: CardDoc[]
-  onRestoreCard?: (cardId: CardDoc['_id']) => void
+  onRestoreCard?: (cardId: CardDoc['id']) => void
 }
 
 function ArchivedCardsTabContent({
@@ -347,9 +378,9 @@ function ArchivedCardsTabContent({
     <>
       {archivedCards.map((card) => (
         <ArchivedCardItem
-          key={card._id}
+          key={card.id}
           card={card}
-          onRestore={() => onRestoreCard?.(card._id)}
+          onRestore={() => onRestoreCard?.(card.id)}
         />
       ))}
     </>

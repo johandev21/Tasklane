@@ -24,10 +24,10 @@ import type { CardDoc, ListDoc } from '#/features/board/types/board.types.ts'
 export interface UseBoardDragAndDropProps {
   lists: ListDoc[]
   cards: CardDoc[]
-  onReorderList?: (listId: ListDoc['_id'], newPosition: number) => void
+  onReorderList?: (listId: ListDoc['id'], newPosition: number) => void
   onReorderCard?: (
-    cardId: CardDoc['_id'],
-    targetListId: ListDoc['_id'],
+    cardId: CardDoc['id'],
+    targetListId: ListDoc['id'],
     newPosition: number,
   ) => void
 }
@@ -39,9 +39,9 @@ export interface BoardDragAndDropState {
   measuring: { droppable: { strategy: MeasuringStrategy } }
   optimisticLists: ListDoc[]
   optimisticCards: CardDoc[]
-  listIds: ListDoc['_id'][]
-  activeCardId: CardDoc['_id'] | null
-  activeListId: ListDoc['_id'] | null
+  listIds: ListDoc['id'][]
+  activeCardId: CardDoc['id'] | null
+  activeListId: ListDoc['id'] | null
   activeCard: CardDoc | null
   activeList: ListDoc | null
   activeListCards: CardDoc[]
@@ -59,8 +59,8 @@ export function useBoardDragAndDrop({
   const canvasRef = useRef<HTMLDivElement>(null)
 
   // Drag & drop active state
-  const [activeCardId, setActiveCardId] = useState<CardDoc['_id'] | null>(null)
-  const [activeListId, setActiveListId] = useState<ListDoc['_id'] | null>(null)
+  const [activeCardId, setActiveCardId] = useState<CardDoc['id'] | null>(null)
+  const [activeListId, setActiveListId] = useState<ListDoc['id'] | null>(null)
 
   // Local optimistic drag state
   const [optimisticLists, setOptimisticLists] = useState<ListDoc[]>(lists)
@@ -92,7 +92,7 @@ export function useBoardDragAndDrop({
   )
 
   const listIds = useMemo(
-    () => optimisticLists.map((l) => l._id),
+    () => optimisticLists.map((l) => l.id),
     [optimisticLists],
   )
 
@@ -108,12 +108,12 @@ export function useBoardDragAndDrop({
     return closestCorners(args)
   }
 
-  const findContainer = (id: string): ListDoc['_id'] | undefined => {
-    if (optimisticLists.some((l) => l._id === id)) {
-      return id as ListDoc['_id']
+  const findContainer = (id: string): ListDoc['id'] | undefined => {
+    if (optimisticLists.some((l) => l.id === id)) {
+      return id
     }
-    const card = optimisticCards.find((c) => c._id === id)
-    return card?.listId
+    const card = optimisticCards.find((c) => c.id === id)
+    return card?.listId ?? undefined
   }
 
   const handleDragStart = (event: DragStartEvent) => {
@@ -127,11 +127,11 @@ export function useBoardDragAndDrop({
     const { active } = event
     const activeData = active.data.current
     if (activeData?.type === 'card') {
-      setActiveCardId(active.id as CardDoc['_id'])
+      setActiveCardId(active.id as CardDoc['id'])
       setOptimisticLists(lists)
       setOptimisticCards(cards)
     } else if (activeData?.type === 'list') {
-      setActiveListId(active.id as ListDoc['_id'])
+      setActiveListId(active.id as ListDoc['id'])
       setOptimisticLists(lists)
       setOptimisticCards(cards)
     }
@@ -150,8 +150,8 @@ export function useBoardDragAndDrop({
     if (activeData?.type === 'list' && overData?.type === 'list') {
       if (activeId !== overId) {
         setOptimisticLists((prev) => {
-          const oldIndex = prev.findIndex((l) => l._id === activeId)
-          const newIndex = prev.findIndex((l) => l._id === overId)
+          const oldIndex = prev.findIndex((l) => l.id === activeId)
+          const newIndex = prev.findIndex((l) => l.id === overId)
           if (oldIndex === -1 || newIndex === -1 || oldIndex === newIndex) {
             return prev
           }
@@ -174,17 +174,17 @@ export function useBoardDragAndDrop({
       if (activeContainer !== overContainer) {
         // Cross-container move
         setOptimisticCards((prev) => {
-          const activeCardIndex = prev.findIndex((c) => c._id === activeId)
+          const activeCardIndex = prev.findIndex((c) => c.id === activeId)
           if (activeCardIndex === -1) return prev
 
           const currentCard = prev[activeCardIndex]
-          const otherCards = prev.filter((c) => c._id !== activeId)
+          const otherCards = prev.filter((c) => c.id !== activeId)
 
           const targetListCards = otherCards.filter(
             (c) => c.listId === overContainer,
           )
           const overCardIndex = targetListCards.findIndex(
-            (c) => c._id === overId,
+            (c) => c.id === overId,
           )
 
           const insertIndex =
@@ -206,8 +206,8 @@ export function useBoardDragAndDrop({
         if (activeId !== overId && overData?.type === 'card') {
           setOptimisticCards((prev) => {
             const listCards = prev.filter((c) => c.listId === activeContainer)
-            const oldIndex = listCards.findIndex((c) => c._id === activeId)
-            const newIndex = listCards.findIndex((c) => c._id === overId)
+            const oldIndex = listCards.findIndex((c) => c.id === activeId)
+            const newIndex = listCards.findIndex((c) => c.id === overId)
 
             if (oldIndex === -1 || newIndex === -1 || oldIndex === newIndex) {
               return prev
@@ -246,18 +246,18 @@ export function useBoardDragAndDrop({
 
     // Finalize List Reordering
     if (activeData?.type === 'list') {
-      const oldIndex = lists.findIndex((l) => l._id === activeId)
-      const targetIndex = optimisticLists.findIndex((l) => l._id === activeId)
+      const oldIndex = lists.findIndex((l) => l.id === activeId)
+      const targetIndex = optimisticLists.findIndex((l) => l.id === activeId)
       if (
         oldIndex !== -1 &&
         targetIndex !== -1 &&
         (oldIndex !== targetIndex || activeId !== overId)
       ) {
-        onReorderList?.(activeId as ListDoc['_id'], targetIndex)
+        onReorderList?.(activeId, targetIndex)
       } else if (overData?.type === 'list' && activeId !== overId) {
-        const newIndex = lists.findIndex((l) => l._id === overId)
+        const newIndex = lists.findIndex((l) => l.id === overId)
         if (newIndex !== -1) {
-          onReorderList?.(activeId as ListDoc['_id'], newIndex)
+          onReorderList?.(activeId, newIndex)
         }
       }
       return
@@ -265,7 +265,7 @@ export function useBoardDragAndDrop({
 
     // Finalize Card Reordering
     if (activeData?.type === 'card') {
-      const activeCardDoc = optimisticCards.find((c) => c._id === activeId)
+      const activeCardDoc = optimisticCards.find((c) => c.id === activeId)
       if (!activeCardDoc) {
         setOptimisticLists(lists)
         setOptimisticCards(cards)
@@ -273,29 +273,26 @@ export function useBoardDragAndDrop({
       }
 
       const targetListId = activeCardDoc.listId
+      if (!targetListId) return
       const targetListCards = optimisticCards.filter(
         (c) => c.listId === targetListId,
       )
-      const targetIndex = targetListCards.findIndex((c) => c._id === activeId)
+      const targetIndex = targetListCards.findIndex((c) => c.id === activeId)
 
       if (targetIndex !== -1) {
-        onReorderCard?.(
-          activeId as CardDoc['_id'],
-          targetListId,
-          Math.max(0, targetIndex),
-        )
+        onReorderCard?.(activeId, targetListId, Math.max(0, targetIndex))
       }
     }
   }
 
   const activeCard = activeCardId
-    ? (optimisticCards.find((c) => c._id === activeCardId) ?? null)
+    ? (optimisticCards.find((c) => c.id === activeCardId) ?? null)
     : null
   const activeList = activeListId
-    ? (optimisticLists.find((l) => l._id === activeListId) ?? null)
+    ? (optimisticLists.find((l) => l.id === activeListId) ?? null)
     : null
   const activeListCards = activeList
-    ? optimisticCards.filter((c) => c.listId === activeList._id)
+    ? optimisticCards.filter((c) => c.listId === activeList.id)
     : []
 
   const measuring = {

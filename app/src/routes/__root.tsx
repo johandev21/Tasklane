@@ -1,10 +1,8 @@
 import { HeadContent, Scripts, createRootRoute } from '@tanstack/react-router'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { TanStackDevtools } from '@tanstack/react-devtools'
-import { ClerkProvider, useAuth } from '@clerk/tanstack-react-start'
-import { ConvexProviderWithClerk } from 'convex/react-clerk'
 
-import { convex } from '#/shared/api/convex-client.ts'
+import { QueryProvider } from '#/app/providers/query-provider.tsx'
 import appCss from '../styles.css?url'
 
 import { ThemeProvider } from '#/app/providers/theme-provider.tsx'
@@ -57,8 +55,6 @@ export const Route = createRootRoute({
 })
 
 function RootDocument({ children }: { children: React.ReactNode }) {
-  const publishableKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY
-
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
@@ -70,13 +66,11 @@ function RootDocument({ children }: { children: React.ReactNode }) {
           storageKey="theme"
           attribute="class"
         >
-          <ClerkProvider publishableKey={publishableKey}>
-            <ConvexProviderWithClerk client={convex} useAuth={useAuth}>
-              <OfflineBanner />
-              {children}
-              <Toaster richColors closeButton position="bottom-right" />
-            </ConvexProviderWithClerk>
-          </ClerkProvider>
+          <QueryProvider>
+            <OfflineBanner />
+            {children}
+            <Toaster richColors closeButton position="bottom-right" />
+          </QueryProvider>
         </ThemeProvider>
         <TanStackDevtools
           config={{

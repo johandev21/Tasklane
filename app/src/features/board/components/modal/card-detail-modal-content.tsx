@@ -30,21 +30,22 @@ export interface CardDetailModalContentProps {
   onSaveTitle: (title: string) => void
   onSaveDescription: (description: string) => void
   onUpdateDueDate: (dueDate: number | undefined) => void
-  onMoveToList: (listId: ListDoc['_id']) => void
+  onMoveToList: (listId: ListDoc['id']) => void
   onArchive: () => void
   onClose: () => void
   onToggleLabel?: (label: LabelDoc) => void
   onToggleAssignee?: (userId: string) => void
   onAddComment?: (body: string) => Promise<void> | void
   onUpdateComment?: (
-    commentId: CommentDoc['_id'],
+    commentId: CommentDoc['id'],
     body: string,
   ) => Promise<void> | void
-  onDeleteComment?: (commentId: CommentDoc['_id']) => Promise<void> | void
+  onDeleteComment?: (commentId: CommentDoc['id']) => Promise<void> | void
   commentsStatus?:
-    'CanLoadMore' | 'LoadingFirstPage' | 'LoadingMore' | 'Exhausted'
+    'CanLoadMore' | 'Error' | 'LoadingFirstPage' | 'LoadingMore' | 'Exhausted'
   isCommentsLoading?: boolean
   onLoadMoreComments?: (numItems: number) => void
+  onRetryComments?: () => void
 }
 
 export function CardDetailModalContent({
@@ -72,8 +73,9 @@ export function CardDetailModalContent({
   commentsStatus,
   isCommentsLoading,
   onLoadMoreComments,
+  onRetryComments,
 }: CardDetailModalContentProps) {
-  const currentList = lists.find((l) => l._id === card.listId)
+  const currentList = lists.find((l) => l.id === card.listId)
 
   return (
     <div className="flex flex-col h-full min-h-0 bg-card select-none">
@@ -140,7 +142,7 @@ export function CardDetailModalContent({
         {/* Comments & Activity Feed Section */}
         <div className="pt-2">
           <CardModalComments
-            cardId={card._id}
+            cardId={card.id}
             cardTitle={card.title}
             comments={comments}
             activities={activities}
@@ -154,6 +156,7 @@ export function CardDetailModalContent({
             commentsStatus={commentsStatus}
             isCommentsLoading={isCommentsLoading}
             onLoadMoreComments={onLoadMoreComments}
+            onRetryComments={onRetryComments}
           />
         </div>
       </div>

@@ -26,7 +26,7 @@ import type {
 } from '#/features/board/types/board.types.ts'
 
 export interface CardModalCommentsProps {
-  cardId: CardDoc['_id']
+  cardId: CardDoc['id']
   cardTitle: string
   comments: EnrichedComment[]
   activities?: EnrichedActivityDoc[]
@@ -34,14 +34,15 @@ export interface CardModalCommentsProps {
   currentUserProfile?: BoardMemberUser | null
   onAddComment: (body: string) => Promise<void> | void
   onUpdateComment: (
-    commentId: CommentDoc['_id'],
+    commentId: CommentDoc['id'],
     body: string,
   ) => Promise<void> | void
-  onDeleteComment: (commentId: CommentDoc['_id']) => Promise<void> | void
+  onDeleteComment: (commentId: CommentDoc['id']) => Promise<void> | void
   commentsStatus?:
-    'CanLoadMore' | 'LoadingFirstPage' | 'LoadingMore' | 'Exhausted'
+    'CanLoadMore' | 'Error' | 'LoadingFirstPage' | 'LoadingMore' | 'Exhausted'
   isCommentsLoading?: boolean
   onLoadMoreComments?: (numItems: number) => void
+  onRetryComments?: () => void
 }
 
 export function CardModalComments({
@@ -57,10 +58,11 @@ export function CardModalComments({
   commentsStatus,
   isCommentsLoading,
   onLoadMoreComments,
+  onRetryComments,
 }: CardModalCommentsProps) {
   const [showDetails, setShowDetails] = useState(true)
   const [deletingCommentId, setDeletingCommentId] = useState<
-    CommentDoc['_id'] | null
+    CommentDoc['id'] | null
   >(null)
 
   const feedItems = useMemo(
@@ -95,6 +97,23 @@ export function CardModalComments({
           currentUserProfile={currentUserProfile}
           onSubmit={onAddComment}
         />
+
+        {commentsStatus === 'Error' && (
+          <div
+            role="alert"
+            className="flex items-center justify-between gap-3 rounded-lg border border-destructive/30 p-3 text-sm"
+          >
+            <span>Comments and activity could not be loaded.</span>
+            <Button
+              type="button"
+              variant="outline"
+              size="xs"
+              onClick={onRetryComments}
+            >
+              Retry
+            </Button>
+          </div>
+        )}
 
         <CardActivityFeed
           feedItems={feedItems}
@@ -279,10 +298,10 @@ interface CardActivityFeedProps {
   currentUserId?: string
   commentsStatus?: string
   onUpdateComment: (
-    commentId: CommentDoc['_id'],
+    commentId: CommentDoc['id'],
     body: string,
   ) => Promise<void> | void
-  onDeleteComment: (commentId: CommentDoc['_id']) => void
+  onDeleteComment: (commentId: CommentDoc['id']) => void
 }
 
 function CardActivityFeed({
@@ -297,14 +316,14 @@ function CardActivityFeed({
       {feedItems.map((item) =>
         item.kind === 'comment' ? (
           <CommentFeedItem
-            key={item.data._id}
+            key={item.data.id}
             comment={item.data}
             currentUserId={currentUserId}
             onUpdateComment={onUpdateComment}
             onDeleteComment={onDeleteComment}
           />
         ) : (
-          <ActivityFeedItem key={item.data._id} activity={item.data} />
+          <ActivityFeedItem key={item.data.id} activity={item.data} />
         ),
       )}
 
@@ -325,10 +344,10 @@ interface CommentFeedItemProps {
   comment: EnrichedComment
   currentUserId?: string
   onUpdateComment: (
-    commentId: CommentDoc['_id'],
+    commentId: CommentDoc['id'],
     body: string,
   ) => Promise<void> | void
-  onDeleteComment: (commentId: CommentDoc['_id']) => void
+  onDeleteComment: (commentId: CommentDoc['id']) => void
 }
 
 function CommentFeedItem({
@@ -354,7 +373,7 @@ function CommentFeedItem({
     setIsSubmitting(true)
     setError(null)
     try {
-      await onUpdateComment(comment._id, trimmed)
+      await onUpdateComment(comment.id, trimmed)
       setIsEditing(false)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update comment')
@@ -383,7 +402,7 @@ function CommentFeedItem({
         <div className="flex items-center gap-2 text-xs">
           <span className="font-semibold text-foreground">{authorName}</span>
           <span className="text-muted-foreground font-mono text-[11px]">
-            {formatRelativeTime(comment._creationTime)}
+            {formatRelativeTime(comment.createdAt)}
           </span>
         </div>
 
@@ -412,7 +431,7 @@ function CommentFeedItem({
                   setEditText(comment.body)
                   setError(null)
                 }}
-                onDelete={() => onDeleteComment(comment._id)}
+                onDelete={() => onDeleteComment(comment.id)}
               />
             )}
           </>
@@ -548,7 +567,7 @@ function ActivityFeedItem({ activity }: { activity: EnrichedActivityDoc }) {
           <span className="text-muted-foreground">{actionText}</span>
         </p>
         <span className="text-xs text-muted-foreground block font-mono">
-          {formatRelativeTime(activity._creationTime)}
+          {formatRelativeTime(activity.createdAt)}
         </span>
       </div>
     </div>

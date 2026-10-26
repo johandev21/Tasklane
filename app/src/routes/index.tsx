@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
-import { useAuth } from '@clerk/tanstack-react-start'
+import { authClient } from '#/shared/api/auth.ts'
 import { KanbanSquare, MessageSquare, Users, Zap } from 'lucide-react'
 
 import { Button } from '#/shared/components/ui/button.tsx'
@@ -22,7 +22,9 @@ import { Logo } from '#/shared/components/logo.tsx'
 export const Route = createFileRoute('/')({ component: LandingPage })
 
 export function LandingPage() {
-  const { isSignedIn, isLoaded } = useAuth()
+  const { data: session, isPending } = authClient.useSession()
+  const isSignedIn = Boolean(session)
+  const isLoaded = !isPending
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -75,14 +77,10 @@ function LandingHeader({
           ) : isLoaded ? (
             <div className="flex items-center gap-2">
               <Button variant="ghost" size="sm" asChild>
-                <Link to="/sign-in/$" params={{ _splat: '' }}>
-                  Sign In
-                </Link>
+                <Link to="/sign-in">Sign In</Link>
               </Button>
               <Button size="sm" asChild>
-                <Link to="/sign-up/$" params={{ _splat: '' }}>
-                  Get Started
-                </Link>
+                <Link to="/sign-up">Get Started</Link>
               </Button>
             </div>
           ) : null}
@@ -107,14 +105,10 @@ function LandingHero() {
 
       <div className="mt-8 flex items-center justify-center gap-3">
         <Button size="lg" asChild>
-          <Link to="/sign-up/$" params={{ _splat: '' }}>
-            Get Started for Free
-          </Link>
+          <Link to="/sign-up">Get Started for Free</Link>
         </Button>
         <Button variant="outline" size="lg" asChild>
-          <Link to="/sign-in/$" params={{ _splat: '' }}>
-            Sign In to Workspace
-          </Link>
+          <Link to="/sign-in">Sign In to Workspace</Link>
         </Button>
       </div>
     </div>

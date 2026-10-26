@@ -40,11 +40,11 @@ export interface CardItemProps {
   assignees?: BoardMemberUser[]
   commentsCount?: number
   isDraggingOverlay?: boolean
-  onRenameCard?: (cardId: CardDoc['_id'], newTitle: string) => void
-  onArchiveCard?: (cardId: CardDoc['_id']) => void
+  onRenameCard?: (cardId: CardDoc['id'], newTitle: string) => void
+  onArchiveCard?: (cardId: CardDoc['id']) => void
   onCardClick?: (card: CardDoc) => void
-  onMoveToTop?: (cardId: CardDoc['_id']) => void
-  onMoveToBottom?: (cardId: CardDoc['_id']) => void
+  onMoveToTop?: (cardId: CardDoc['id']) => void
+  onMoveToBottom?: (cardId: CardDoc['id']) => void
 }
 
 export const CardItem = memo(function CardItem({
@@ -65,10 +65,10 @@ export const CardItem = memo(function CardItem({
   const sortableData = useMemo(
     () => ({
       type: 'card' as const,
-      cardId: card._id,
+      cardId: card.id,
       listId: card.listId,
     }),
-    [card._id, card.listId],
+    [card.id, card.listId],
   )
 
   const {
@@ -79,7 +79,7 @@ export const CardItem = memo(function CardItem({
     transition,
     isDragging,
   } = useSortable({
-    id: card._id,
+    id: card.id,
     data: sortableData,
     disabled: isEditing || isDraggingOverlay,
   })
@@ -94,7 +94,7 @@ export const CardItem = memo(function CardItem({
   const handleSaveRename = () => {
     const trimmed = editTitle.trim()
     if (trimmed && trimmed !== card.title) {
-      onRenameCard?.(card._id, trimmed)
+      onRenameCard?.(card.id, trimmed)
     } else {
       setEditTitle(card.title)
     }
@@ -178,7 +178,7 @@ export const CardItem = memo(function CardItem({
       {/* Floating quick-actions on hover */}
       {!isEditing && !isDraggingOverlay && (
         <CardQuickActionsMenu
-          cardId={card._id}
+          cardId={card.id}
           onStartEdit={() => setIsEditing(true)}
           onMoveToTop={onMoveToTop}
           onMoveToBottom={onMoveToBottom}
@@ -212,7 +212,7 @@ function CardLabelBadges({ labels }: { labels: LabelDoc[] }) {
         const colorDef = getLabelColor(lbl.color)
         return (
           <span
-            key={lbl._id}
+            key={lbl.id}
             className={`inline-flex items-center rounded-md px-1.5 py-0.5 text-[11px] font-semibold border ${colorDef.badgeClass} max-w-full`}
             title={lbl.name}
           >
@@ -367,11 +367,11 @@ function CardAssigneeStack({ assignees }: { assignees: BoardMemberUser[] }) {
 }
 
 interface CardQuickActionsMenuProps {
-  cardId: CardDoc['_id']
+  cardId: CardDoc['id']
   onStartEdit: () => void
-  onMoveToTop?: (cardId: CardDoc['_id']) => void
-  onMoveToBottom?: (cardId: CardDoc['_id']) => void
-  onArchiveCard?: (cardId: CardDoc['_id']) => void
+  onMoveToTop?: (cardId: CardDoc['id']) => void
+  onMoveToBottom?: (cardId: CardDoc['id']) => void
+  onArchiveCard?: (cardId: CardDoc['id']) => void
 }
 
 function CardQuickActionsMenu({

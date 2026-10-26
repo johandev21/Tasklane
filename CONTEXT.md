@@ -1,4 +1,4 @@
-# Trello Clone
+# Tasklane
 
 A simplified project-management platform for organizing work through boards, lists, and cards, with real-time collaboration.
 

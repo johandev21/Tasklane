@@ -1,4 +1,3 @@
-import type { Id } from '../../../../convex/_generated/dataModel'
 import type {
   BoardMemberUser,
   CardDoc,
@@ -13,10 +12,10 @@ import type {
  */
 export function reorderLists(
   currentLists: ListDoc[],
-  listId: Id<'lists'>,
+  listId: string,
   newPosition: number,
 ): ListDoc[] {
-  const currentIndex = currentLists.findIndex((l) => l._id === listId)
+  const currentIndex = currentLists.findIndex((l) => l.id === listId)
   if (currentIndex === -1) return currentLists
 
   const updated = [...currentLists].sort((a, b) => a.position - b.position)
@@ -35,15 +34,15 @@ export function reorderLists(
  */
 export function reorderCardsWithinList(
   currentCards: CardDoc[],
-  cardId: Id<'cards'>,
-  listId: Id<'lists'>,
+  cardId: string,
+  listId: string,
   newPosition: number,
 ): CardDoc[] {
   const listCards = currentCards
     .filter((c) => c.listId === listId && !c.archived)
     .sort((a, b) => a.position - b.position)
 
-  const currentIndex = listCards.findIndex((c) => c._id === cardId)
+  const currentIndex = listCards.findIndex((c) => c.id === cardId)
   if (currentIndex === -1) return currentCards
 
   const [moved] = listCards.splice(currentIndex, 1)
@@ -69,22 +68,22 @@ export function reorderCardsWithinList(
  */
 export function moveCardBetweenLists(
   currentCards: CardDoc[],
-  cardId: Id<'cards'>,
-  targetListId: Id<'lists'>,
+  cardId: string,
+  targetListId: string,
   newPosition: number,
 ): CardDoc[] {
-  const card = currentCards.find((c) => c._id === cardId)
+  const card = currentCards.find((c) => c.id === cardId)
   if (!card) return currentCards
 
   const sourceListId = card.listId
 
   const sourceCards = currentCards
-    .filter((c) => c.listId === sourceListId && c._id !== cardId && !c.archived)
+    .filter((c) => c.listId === sourceListId && c.id !== cardId && !c.archived)
     .sort((a, b) => a.position - b.position)
     .map((c, idx) => ({ ...c, position: idx }))
 
   const targetCards = currentCards
-    .filter((c) => c.listId === targetListId && c._id !== cardId && !c.archived)
+    .filter((c) => c.listId === targetListId && c.id !== cardId && !c.archived)
     .sort((a, b) => a.position - b.position)
 
   const targetIndex = Math.max(0, Math.min(newPosition, targetCards.length))
@@ -114,20 +113,20 @@ export function moveCardBetweenLists(
  */
 export function moveCardToListEnd(
   currentCards: CardDoc[],
-  cardId: Id<'cards'>,
-  targetListId: Id<'lists'>,
+  cardId: string,
+  targetListId: string,
 ): CardDoc[] {
-  const card = currentCards.find((c) => c._id === cardId)
+  const card = currentCards.find((c) => c.id === cardId)
   if (!card || card.listId === targetListId) return currentCards
 
   const sourceListId = card.listId
   const sourceCards = currentCards
-    .filter((c) => c.listId === sourceListId && c._id !== cardId && !c.archived)
+    .filter((c) => c.listId === sourceListId && c.id !== cardId && !c.archived)
     .sort((a, b) => a.position - b.position)
     .map((c, idx) => ({ ...c, position: idx }))
 
   const targetCards = currentCards
-    .filter((c) => c.listId === targetListId && c._id !== cardId && !c.archived)
+    .filter((c) => c.listId === targetListId && c.id !== cardId && !c.archived)
     .sort((a, b) => a.position - b.position)
 
   const updatedTargetCards = [
@@ -150,9 +149,9 @@ export function moveCardToListEnd(
  */
 export function removeArchivedCard(
   currentCards: CardDoc[],
-  cardId: Id<'cards'>,
+  cardId: string,
 ): CardDoc[] {
-  return currentCards.filter((c) => c._id !== cardId)
+  return currentCards.filter((c) => c.id !== cardId)
 }
 
 /**
@@ -214,7 +213,7 @@ export type FeedItem =
 export function getCardFeedItems(
   comments: EnrichedComment[],
   activities: EnrichedActivityDoc[],
-  cardId: Id<'cards'> | string,
+  cardId: string | string,
   cardTitle: string,
   showDetails: boolean,
 ): FeedItem[] {
@@ -230,13 +229,13 @@ export function getCardFeedItems(
     ...comments.map((c): FeedItem => ({
       kind: 'comment',
       data: c,
-      timestamp: c._creationTime,
+      timestamp: c.createdAt,
     })),
     ...(showDetails
       ? cardActivities.map((a): FeedItem => ({
           kind: 'activity',
           data: a,
-          timestamp: a._creationTime,
+          timestamp: a.createdAt,
         }))
       : []),
   ]
@@ -354,7 +353,7 @@ export function formatCardActivityMessage(act: EnrichedActivityDoc): string {
     case 'card_assignee_removed':
       return 'unassigned a member from this card'
     case 'card_due_date_updated':
-      return p.dueDate
+      return typeof p.dueDate === 'number' || typeof p.dueDate === 'string'
         ? `set due date to ${new Date(p.dueDate).toLocaleDateString()}`
         : 'removed due date'
     case 'card_description_updated':

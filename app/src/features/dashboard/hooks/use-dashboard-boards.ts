@@ -1,21 +1,29 @@
-import { useConvexAuth, useQuery } from 'convex/react'
-import { api } from '../../../../convex/_generated/api'
+import { useQuery } from '@tanstack/react-query'
+import { authClient } from '#/shared/api/auth.ts'
+import { api } from '#/shared/api/client.ts'
+import { queryKeys } from '#/shared/api/query-keys.ts'
 import type { BoardSummary } from '../types/dashboard.types.ts'
 
 export interface UseDashboardBoardsResult {
   boards: BoardSummary[] | undefined
   isLoading: boolean
   isAuthenticated: boolean
+  error: Error | null
 }
 
 export function useDashboardBoards(): UseDashboardBoardsResult {
-  const { isLoading: isAuthLoading, isAuthenticated } = useConvexAuth()
-  const queryArgs = isAuthenticated ? {} : 'skip'
-  const rawBoards = useQuery(api.boards.list, queryArgs)
+  const session = authClient.useSession()
+  const isAuthenticated = Boolean(session.data)
+  const boards = useQuery({
+    queryKey: queryKeys.boards,
+    queryFn: ({ signal }) => api.boards.list(signal),
+    enabled: !session.isPending && isAuthenticated,
+  })
 
   return {
-    boards: rawBoards,
-    isLoading: isAuthLoading || (isAuthenticated && rawBoards === undefined),
+    boards: boards.data,
+    isLoading: session.isPending || (isAuthenticated && boards.isPending),
     isAuthenticated,
+    error: session.error ?? boards.error ?? null,
   }
 }

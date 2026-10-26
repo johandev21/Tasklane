@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { useAuth } from '@clerk/tanstack-react-start'
+import { authClient } from '#/shared/api/auth.ts'
 import { Button } from '#/shared/components/ui/button.tsx'
 import { AppError } from '#/shared/components/ui/app-error.tsx'
 import {
@@ -17,7 +17,7 @@ import {
   filterBoards,
 } from '#/features/dashboard'
 import type { BoardFilterMode } from '#/features/dashboard'
-import { SignInRequired, useHomeUserSync } from '#/features/auth'
+import { SignInRequired } from '#/features/auth'
 
 interface HomeSearch {
   view?: BoardFilterMode
@@ -36,16 +36,24 @@ export const Route = createFileRoute('/home')({
 })
 
 export function HomePage() {
-  const { isLoaded, isSignedIn } = useAuth()
+  const session = authClient.useSession()
   const { view = 'all' } = Route.useSearch()
   const navigate = useNavigate({ from: Route.fullPath })
-  const { boards, isLoading: isLoadingBoards } = useDashboardBoards()
+  const {
+    boards,
+    isLoading: isLoadingBoards,
+    error: boardsError,
+  } = useDashboardBoards()
   const { createBoard } = useCreateBoard()
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
 
-  useHomeUserSync(isLoaded)
-
-  if (isLoaded && !isSignedIn) {
+  if (session.error || boardsError) {
+    return <AppError error={session.error ?? boardsError} />
+  }
+  if (session.isPending || isLoadingBoards) {
+    return <DashboardSkeleton />
+  }
+  if (!session.data) {
     return <SignInRequired />
   }
 
@@ -67,9 +75,7 @@ export function HomePage() {
 
       <main className="flex-1 pb-16">
         <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
-          {isLoadingBoards ? (
-            <DashboardSkeleton />
-          ) : allBoards.length === 0 ? (
+          {allBoards.length === 0 ? (
             <NoBoardsState onOpenCreate={() => setCreateDialogOpen(true)} />
           ) : (
             <div className="flex flex-col gap-8">

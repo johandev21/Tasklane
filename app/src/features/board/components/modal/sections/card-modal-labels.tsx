@@ -34,7 +34,7 @@ export function CardModalLabels({
       <div className="flex flex-wrap items-center gap-1.5">
         {cardLabels.map((lbl) => (
           <ActiveLabelBadge
-            key={lbl._id}
+            key={lbl.id}
             label={lbl}
             onToggle={() => onToggleLabel(lbl)}
           />
@@ -109,11 +109,11 @@ function CardLabelsTogglePopover({
         <div className="space-y-1.5 max-h-56 overflow-y-auto p-0.5">
           {boardLabels.map((lbl) => {
             const colorDef = getLabelColor(lbl.color)
-            const isSelected = cardLabels.some((l) => l._id === lbl._id)
+            const isSelected = cardLabels.some((l) => l.id === lbl.id)
 
             return (
               <button
-                key={lbl._id}
+                key={lbl.id}
                 type="button"
                 onClick={() => onToggleLabel(lbl)}
                 className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm transition-colors text-left cursor-pointer ${

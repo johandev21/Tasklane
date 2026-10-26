@@ -11,7 +11,7 @@ import type { ListDoc } from '#/features/board/types/board.types.ts'
 export interface CardModalTopBarProps {
   currentList?: ListDoc
   allLists: ListDoc[]
-  onMoveToList: (listId: ListDoc['_id']) => void
+  onMoveToList: (listId: ListDoc['id']) => void
   onArchive: () => void
   onClose: () => void
 }
@@ -43,11 +43,11 @@ export function CardModalTopBar({
               Move to List
             </div>
             {allLists.map((l) => {
-              const isSelected = l._id === currentList?._id
+              const isSelected = l.id === currentList?.id
               return (
                 <DropdownMenuItem
-                  key={l._id}
-                  onClick={() => onMoveToList(l._id)}
+                  key={l.id}
+                  onClick={() => onMoveToList(l.id)}
                   className="flex items-center justify-between text-sm cursor-pointer"
                 >
                   <span className="truncate break-words">{l.title}</span>

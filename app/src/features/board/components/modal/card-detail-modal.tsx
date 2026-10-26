@@ -36,23 +36,24 @@ export interface CardDetailModalProps {
   currentUserProfile?: BoardMemberUser | null
   isOpen: boolean
   onClose: () => void
-  onSaveTitle: (cardId: CardDoc['_id'], title: string) => void
-  onSaveDescription: (cardId: CardDoc['_id'], description: string) => void
-  onUpdateDueDate: (cardId: CardDoc['_id'], dueDate: number | undefined) => void
-  onMoveToList: (cardId: CardDoc['_id'], listId: ListDoc['_id']) => void
-  onArchive: (cardId: CardDoc['_id']) => void
-  onToggleLabel?: (cardId: CardDoc['_id'], label: LabelDoc) => void
-  onToggleAssignee?: (cardId: CardDoc['_id'], userId: string) => void
-  onAddComment?: (cardId: CardDoc['_id'], body: string) => Promise<void> | void
+  onSaveTitle: (cardId: CardDoc['id'], title: string) => void
+  onSaveDescription: (cardId: CardDoc['id'], description: string) => void
+  onUpdateDueDate: (cardId: CardDoc['id'], dueDate: number | undefined) => void
+  onMoveToList: (cardId: CardDoc['id'], listId: ListDoc['id']) => void
+  onArchive: (cardId: CardDoc['id']) => void
+  onToggleLabel?: (cardId: CardDoc['id'], label: LabelDoc) => void
+  onToggleAssignee?: (cardId: CardDoc['id'], userId: string) => void
+  onAddComment?: (cardId: CardDoc['id'], body: string) => Promise<void> | void
   onUpdateComment?: (
-    commentId: CommentDoc['_id'],
+    commentId: CommentDoc['id'],
     body: string,
   ) => Promise<void> | void
-  onDeleteComment?: (commentId: CommentDoc['_id']) => Promise<void> | void
+  onDeleteComment?: (commentId: CommentDoc['id']) => Promise<void> | void
   commentsStatus?:
-    'CanLoadMore' | 'LoadingFirstPage' | 'LoadingMore' | 'Exhausted'
+    'CanLoadMore' | 'Error' | 'LoadingFirstPage' | 'LoadingMore' | 'Exhausted'
   isCommentsLoading?: boolean
   onLoadMoreComments?: (numItems: number) => void
+  onRetryComments?: () => void
 }
 
 export function CardDetailModal({
@@ -81,6 +82,7 @@ export function CardDetailModal({
   commentsStatus,
   isCommentsLoading,
   onLoadMoreComments,
+  onRetryComments,
 }: CardDetailModalProps) {
   const isMobile = useIsMobile()
 
@@ -98,20 +100,21 @@ export function CardDetailModal({
       activities={activities}
       currentUserId={currentUserId}
       currentUserProfile={currentUserProfile}
-      onSaveTitle={(title) => onSaveTitle(card._id, title)}
-      onSaveDescription={(desc) => onSaveDescription(card._id, desc)}
-      onUpdateDueDate={(dueDate) => onUpdateDueDate(card._id, dueDate)}
-      onMoveToList={(listId) => onMoveToList(card._id, listId)}
-      onArchive={() => onArchive(card._id)}
+      onSaveTitle={(title) => onSaveTitle(card.id, title)}
+      onSaveDescription={(desc) => onSaveDescription(card.id, desc)}
+      onUpdateDueDate={(dueDate) => onUpdateDueDate(card.id, dueDate)}
+      onMoveToList={(listId) => onMoveToList(card.id, listId)}
+      onArchive={() => onArchive(card.id)}
       onClose={onClose}
-      onToggleLabel={(label) => onToggleLabel?.(card._id, label)}
-      onToggleAssignee={(userId) => onToggleAssignee?.(card._id, userId)}
-      onAddComment={(body) => onAddComment?.(card._id, body)}
+      onToggleLabel={(label) => onToggleLabel?.(card.id, label)}
+      onToggleAssignee={(userId) => onToggleAssignee?.(card.id, userId)}
+      onAddComment={(body) => onAddComment?.(card.id, body)}
       onUpdateComment={(commentId, body) => onUpdateComment?.(commentId, body)}
       onDeleteComment={(commentId) => onDeleteComment?.(commentId)}
       commentsStatus={commentsStatus}
       isCommentsLoading={isCommentsLoading}
       onLoadMoreComments={onLoadMoreComments}
+      onRetryComments={onRetryComments}
     />
   )
 

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { Menu, Trash2, UserPlus } from 'lucide-react'
-import { UserButton } from '@clerk/tanstack-react-start'
+import { UserMenu } from '#/features/auth'
 import { Button } from '#/shared/components/ui/button.tsx'
 import {
   Breadcrumb,
@@ -333,13 +333,7 @@ function BoardHeaderActions({
         <ModeToggle />
       </div>
 
-      <UserButton
-        appearance={{
-          elements: {
-            avatarBox: 'size-8 rounded-full ring-1 ring-border',
-          },
-        }}
-      />
+      <UserMenu />
     </>
   )
 }

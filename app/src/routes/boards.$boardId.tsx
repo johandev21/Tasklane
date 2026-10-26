@@ -28,6 +28,7 @@ export function BoardPage() {
   const { boardId } = Route.useParams()
   const page = useBoardPage(boardId)
 
+  if (page.status === 'error') return <AppError error={page.error} />
   if (page.status === 'loading') return <BoardSkeleton />
   if (page.status === 'unauthenticated') return <SignInRequired />
   if (page.status === 'not-found') return <BoardNotFound />
@@ -47,9 +48,7 @@ function SignInRequired() {
         </EmptyHeader>
         <EmptyContent>
           <Button asChild>
-            <Link to="/sign-in/$" params={{ _splat: '' }}>
-              Sign In
-            </Link>
+            <Link to="/sign-in">Sign In</Link>
           </Button>
         </EmptyContent>
       </Empty>
@@ -104,6 +103,7 @@ function BoardWorkspace({
     commentsStatus,
     isCommentsLoading,
     loadMoreComments,
+    retryComments,
     isActivityMenuOpen,
     listBeingDeleted,
     deletedListCardCount,
@@ -127,7 +127,7 @@ function BoardWorkspace({
           members={boardMembers}
           presence={presenceViewers}
           isOwner={board.isOwner}
-          currentUserId={currentUser?.tokenIdentifier}
+          currentUserId={currentUser?.id}
           onOpenBoardMenu={() => setIsActivityMenuOpen(true)}
           onInviteMember={memberActions.inviteMember}
           onRemoveMember={memberActions.removeMember}
@@ -151,12 +151,12 @@ function BoardWorkspace({
         onRenameCard={cardActions.renameCard}
         onArchiveCard={(cardId) =>
           cardActions.archiveCard(cardId, () => {
-            if (activeCard?._id === cardId) {
+            if (activeCard?.id === cardId) {
               setActiveCardId(null)
             }
           })
         }
-        onCardClick={(card) => setActiveCardId(card._id)}
+        onCardClick={(card) => setActiveCardId(card.id)}
         onReorderList={listActions.reorderList}
         onReorderCard={cardActions.reorderCard}
       />
@@ -174,7 +174,8 @@ function BoardWorkspace({
         commentsStatus={commentsStatus}
         isCommentsLoading={isCommentsLoading}
         onLoadMoreComments={loadMoreComments}
-        currentUserId={currentUser?.tokenIdentifier}
+        onRetryComments={retryComments}
+        currentUserId={currentUser?.id}
         currentUserProfile={currentUserProfile}
         isOpen={Boolean(activeCard)}
         onClose={() => setActiveCardId(null)}
@@ -184,7 +185,7 @@ function BoardWorkspace({
         onMoveToList={cardActions.moveCardToList}
         onArchive={() => {
           if (activeCard) {
-            cardActions.archiveCard(activeCard._id, () => {
+            cardActions.archiveCard(activeCard.id, () => {
               setActiveCardId(null)
             })
           }
@@ -192,7 +193,7 @@ function BoardWorkspace({
         onToggleLabel={labelActions.toggleCardLabel}
         onToggleAssignee={(userId) => {
           if (activeCard) {
-            memberActions.toggleCardAssignee(activeCard._id, userId)
+            memberActions.toggleCardAssignee(activeCard.id, userId)
           }
         }}
         onAddComment={commentActions.addComment}
